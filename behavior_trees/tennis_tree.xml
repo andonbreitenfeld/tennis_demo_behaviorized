@@ -1,0 +1,59 @@
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  
+  <BehaviorTree ID="MainTree">
+    <Sequence name="RootSequence">
+      
+      <!-- Startup: Claim lease, Power on, Undock -->
+      <Sequence name="StartupSequence">
+        <TriggerService service_name="/spot_driver/claim" timeout="5.0"/>
+        <TriggerService service_name="/spot_driver/power_on" timeout="5.0"/>
+        <TriggerService service_name="/spot_driver/undock" timeout="10.0"/>
+      </Sequence>
+
+      <!-- Wait for bin detection (blocks until bin is detected) -->
+      <RetryUntilSuccessful num_attempts="-1">
+        <CheckBinDetected/>
+      </RetryUntilSuccessful>
+
+      <!-- Navigate to survey location (pose set in blackboard from C++ code) -->
+      <NavigateToPose goal="{survey_pose}"/>
+
+      <!-- Main loop: Wait for ball, go to ball, go to bin, return to survey, repeat -->
+      <ForceSuccess>
+        <Repeat num_cycles="-1">
+          <Sequence name="BallCollectionCycle">
+            
+            <!-- Wait for ball detection -->
+            <RetryUntilSuccessful num_attempts="-1">
+              <CheckBallDetected/>
+            </RetryUntilSuccessful>
+
+            <!-- Get ball pose and navigate to it (uninterruptible sequence) -->
+            <Sequence name="GoToBallUninterruptible">
+              <GetBallPose ball_pose="{ball_pose}"/>
+              <NavigateToPose goal="{ball_pose}"/>
+              <Delay delay_msec="3000">
+                <AlwaysSuccess/>
+              </Delay>
+            </Sequence>
+
+            <!-- Get bin pose and navigate to it (uninterruptible sequence) -->
+            <Sequence name="GoToBinUninterruptible">
+              <GetBinPose bin_pose="{bin_pose}"/>
+              <NavigateToPose goal="{bin_pose}"/>
+              <Delay delay_msec="3000">
+                <AlwaysSuccess/>
+              </Delay>
+            </Sequence>
+
+            <!-- Return to survey point -->
+            <NavigateToPose goal="{survey_pose}"/>
+
+          </Sequence>
+        </Repeat>
+      </ForceSuccess>
+
+    </Sequence>
+  </BehaviorTree>
+
+</root>
