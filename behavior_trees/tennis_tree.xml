@@ -1,59 +1,99 @@
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
-  
   <BehaviorTree ID="MainTree">
-    <Sequence name="RootSequence">
-      
-      <!-- Startup: Claim lease, Power on, Undock -->
-      <Sequence name="StartupSequence">
-        <TriggerService service_name="/spot_driver/claim" timeout="5.0"/>
-        <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
-        <TriggerService service_name="/spot_driver/undock" timeout="10.0"/>
-      </Sequence>
+   <Sequence name="RootSequence">
+    
+     <!-- Startup: Claim lease, Power on, Undock -->
+     <Sequence name="StartupSequence">
+       <TriggerService service_name="/spot_driver/claim" timeout="5.0"/>
+       <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
+       <TriggerService service_name="/spot_driver/undock" timeout="10.0"/>
+     </Sequence>
 
-      <!-- Wait for bin detection (blocks until bin is detected) -->
-      <RetryUntilSuccessful num_attempts="-1">
-        <CheckBinDetected/>
-      </RetryUntilSuccessful>
 
-      <!-- Navigate to survey location (pose set in blackboard from C++ code) -->
-      <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
+     <!-- Wait for bin detection (blocks until bin is detected) -->
+     <RetryUntilSuccessful num_attempts="-1">
+       <CheckBinDetected/>
+     </RetryUntilSuccessful>
 
-      <!-- Main loop: Wait for ball, go to ball, go to bin, return to survey, repeat -->
-      <ForceSuccess>
-        <Repeat num_cycles="-1">
-          <Sequence name="BallCollectionCycle">
-            
-            <!-- Wait for ball detection -->
-            <RetryUntilSuccessful num_attempts="-1">
-              <CheckBallDetected/>
-            </RetryUntilSuccessful>
 
-            <!-- Get ball pose and navigate to it (uninterruptible sequence) -->
-            <Sequence name="GoToBallUninterruptible">
-              <GetBallPose ball_pose="{ball_pose}"/>
-              <NavigateToPose target_pose="{ball_pose}" robot_nav_namespace="spot_nav"/>
-              <Delay delay_msec="3000">
-                <AlwaysSuccess/>
-              </Delay>
-            </Sequence>
+     <!-- Main loop: Wait for ball, go to ball, go to bin, return to survey, repeat -->
+     <ForceSuccess>
+       <Repeat num_cycles="-1">
+         <Sequence name="BallCollectionCycle">
+          
+           <SubTree ID="BallSearchAB"
+             pose_a="{survey_pose_a}"
+             pose_b="{survey_pose_b}"
+             _autoremap="true"/>
 
-            <!-- Get bin pose and navigate to it (uninterruptible sequence) -->
-            <Sequence name="GoToBinUninterruptible">
-              <GetBinPose bin_pose="{bin_pose}"/>
-              <NavigateToPose target_pose="{bin_pose}" robot_nav_namespace="spot_nav"/>
-              <Delay delay_msec="3000">
-                <AlwaysSuccess/>
-              </Delay>
-            </Sequence>
 
-            <!-- Return to survey point -->
-            <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
+           <!-- Get ball pose and navigate to it (uninterruptible sequence) -->
+           <Sequence name="GoToBallUninterruptible">
+             <GetBallPose ball_pose="{ball_pose}"/>
+             <NavigateToPose target_pose="{ball_pose}" robot_nav_namespace="spot_nav"/>
+             <Delay delay_msec="3000">
+               <AlwaysSuccess/>
+             </Delay>
+           </Sequence>
 
-          </Sequence>
-        </Repeat>
-      </ForceSuccess>
 
-    </Sequence>
-  </BehaviorTree>
+           <!-- Get bin pose and navigate to it (uninterruptible sequence) -->
+           <Sequence name="GoToBinUninterruptible">
+             <GetBinPose bin_pose="{bin_pose}"/>
+             <NavigateToPose target_pose="{bin_pose}" robot_nav_namespace="spot_nav"/>
+             <Delay delay_msec="3000">
+               <AlwaysSuccess/>
+             </Delay>
+           </Sequence>
+
+
+         </Sequence>
+       </Repeat>
+     </ForceSuccess>
+
+
+   </Sequence>
+ </BehaviorTree>
+
+
+ <BehaviorTree ID="BallSearchAB">
+ <!--
+   This subtree:
+     - Alternates between survey_pose_a and survey_pose_b.
+     - Each pose gets a 5s window where CheckBallDetected can succeed.
+     - Returns SUCCESS the first time a ball is detected.
+     - Returns RUNNING while it keeps searching.
+ -->
+ <RetryUntilSuccessful num_attempts="-1">
+   <Fallback name="SearchAB">
+
+
+     <!-- Check Pose A -->
+     <Sequence name="CheckAtA">
+       <NavigateToPose target_pose="{pose_a}" robot_nav_namespace="spot_nav"/>
+       <Timeout msec="5000">
+         <!-- Retry condition until it succeeds or times out -->
+         <RetryUntilSuccessful num_attempts="-1">
+           <CheckBallDetected/>
+         </RetryUntilSuccessful>
+       </Timeout>
+     </Sequence>
+
+
+     <!-- Check Pose B -->
+     <Sequence name="CheckAtB">
+       <NavigateToPose target_pose="{pose_b}" robot_nav_namespace="spot_nav"/>
+       <Timeout msec="5000">
+         <RetryUntilSuccessful num_attempts="-1">
+           <CheckBallDetected/>
+         </RetryUntilSuccessful>
+       </Timeout>
+     </Sequence>
+
+
+   </Fallback>
+ </RetryUntilSuccessful>
+</BehaviorTree>
+
 
 </root>
