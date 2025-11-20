@@ -6,7 +6,7 @@
       <!-- Startup: Claim lease, Power on, Undock -->
       <Sequence name="StartupSequence">
         <TriggerService service_name="/spot_driver/claim" timeout="5.0"/>
-        <TriggerService service_name="/spot_driver/power_on" timeout="5.0"/>
+        <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
         <TriggerService service_name="/spot_driver/undock" timeout="10.0"/>
       </Sequence>
 
@@ -16,7 +16,7 @@
       </RetryUntilSuccessful>
 
       <!-- Navigate to survey location (pose set in blackboard from C++ code) -->
-      <NavigateToPose goal="{survey_pose}"/>
+      <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
 
       <!-- Main loop: Wait for ball, go to ball, go to bin, return to survey, repeat -->
       <ForceSuccess>
@@ -31,7 +31,7 @@
             <!-- Get ball pose and navigate to it (uninterruptible sequence) -->
             <Sequence name="GoToBallUninterruptible">
               <GetBallPose ball_pose="{ball_pose}"/>
-              <NavigateToPose goal="{ball_pose}"/>
+              <NavigateToPose target_pose="{ball_pose}" robot_nav_namespace="spot_nav"/>
               <Delay delay_msec="3000">
                 <AlwaysSuccess/>
               </Delay>
@@ -40,14 +40,14 @@
             <!-- Get bin pose and navigate to it (uninterruptible sequence) -->
             <Sequence name="GoToBinUninterruptible">
               <GetBinPose bin_pose="{bin_pose}"/>
-              <NavigateToPose goal="{bin_pose}"/>
+              <NavigateToPose target_pose="{bin_pose}" robot_nav_namespace="spot_nav"/>
               <Delay delay_msec="3000">
                 <AlwaysSuccess/>
               </Delay>
             </Sequence>
 
             <!-- Return to survey point -->
-            <NavigateToPose goal="{survey_pose}"/>
+            <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
 
           </Sequence>
         </Repeat>

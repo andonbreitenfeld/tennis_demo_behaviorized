@@ -55,13 +55,13 @@ int main(int argc, char **argv)
     auto survey_pose = std::make_shared<geometry_msgs::msg::PoseStamped>();
     survey_pose->header.frame_id = "spot_nav/map";
     survey_pose->pose.position.x = 2.0;  // Replace with actual coordinates (2.0)
-    survey_pose->pose.position.y = 4.0;  // Replace with actual coordinates (4.0)
+    survey_pose->pose.position.y = -4.0;  // Replace with actual coordinates (-4.0)
     survey_pose->pose.position.z = 0.0;
     // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
-    survey_pose->pose.orientation.w = 1.0;
     survey_pose->pose.orientation.x = 0.0;
     survey_pose->pose.orientation.y = 0.0;
-    survey_pose->pose.orientation.z = 0.0;
+    survey_pose->pose.orientation.z = -0.7071;
+    survey_pose->pose.orientation.w = 0.7071;
 
     // Set initial values in blackboard
     tree.rootBlackboard()->set<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("survey_pose", survey_pose);
