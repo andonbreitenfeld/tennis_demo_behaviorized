@@ -11,6 +11,9 @@
 #include "tennis_demo_behaviorized/behaviors/check_ball_detected.hpp"
 #include "tennis_demo_behaviorized/behaviors/get_ball_pose.hpp"
 #include "tennis_demo_behaviorized/behaviors/get_bin_pose.hpp"
+#include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
+// #include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
+
 
 // Utility behaviors
 #include <nrg_utility_behaviors/get_current_pose.hpp>
@@ -37,6 +40,8 @@ int main(int argc, char **argv)
     factory.registerNodeType<tennis_demo::CheckBallDetected>("CheckBallDetected");
     factory.registerNodeType<tennis_demo::GetBallPose>("GetBallPose");
     factory.registerNodeType<tennis_demo::GetBinPose>("GetBinPose");
+    factory.registerNodeType<tennis_demo::PickBall>("PickBall");
+    // factory.registerNodeType<tennis_demo::DropBall>("DropBall");
 
     // Register utility nodes
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");

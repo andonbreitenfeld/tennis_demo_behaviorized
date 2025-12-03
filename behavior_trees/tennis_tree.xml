@@ -37,6 +37,15 @@
               </Delay>
             </Sequence>
 
+            <!-- Pick ball, call subtree -->
+            <Sequence name="PickBall">
+              <GetBallPose ball_pose="{ball_pose}"/>
+              <NavigateToPose target_pose="{ball_pose}" robot_nav_namespace="spot_nav"/>
+              <Delay delay_msec="3000">
+                <AlwaysSuccess/>
+              </Delay>
+            </Sequence>
+
             <!-- Get bin pose and navigate to it (uninterruptible sequence) -->
             <Sequence name="GoToBinUninterruptible">
               <GetBinPose bin_pose="{bin_pose}"/>
@@ -45,6 +54,8 @@
                 <AlwaysSuccess/>
               </Delay>
             </Sequence>
+
+            <!-- Drop ball, call subtree -->
 
             <!-- Return to survey point -->
             <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
@@ -55,5 +66,38 @@
 
     </Sequence>
   </BehaviorTree>
+
+  <!-- Subtree to retract arm -->
+	<BehaviorTree ID="PickBall">
+		<Sequence>
+			<!-- Port variables -->
+			<Script code="service_timeout:=15"/>
+			<Script code="open_gripper_service:= '/spot_manipulation_driver/open_gripper'"/>
+			<Script code="close_gripper_service:= '/spot_manipulation_driver/close_gripper'"/>
+			<Script code="stow_service:='/spot_manipulation_driver/stow_arm'"/>
+      <Script code="unstow_gripper_service:= '/spot_manipulation_driver/mini_unstow_arm'"/>
+
+			<!-- <Script code="postaffordance_downward:=POSTAFFORDANCE_DOWNWARD"/> -->
+			<!-- <Script code="retract:=RETRACT"/> -->
+
+      <!-- Mini undock -->
+
+			<!-- Ensure gripper is open -->
+			<TriggerService service_name="{open_gripper_service}"  timeout="{service_timeout}"/>
+
+      <!-- Custom MoveIt node (move to ball and rotate arm) -->
+
+
+	    <!-- Close the gripper, grabbing ball -->
+			<TriggerService service_name="{close_gripper_service}"  timeout="{service_timeout}"/>
+
+			<!-- Stow arm after grabbing ball-->
+			<TriggerService service_name="{stow_service}" timeout="{service_timeout}"/>
+			<GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
+			<BooleanCondition value="{is_stowed}"/>
+
+		
+		</Sequence>
+	</BehaviorTree>
 
 </root>
