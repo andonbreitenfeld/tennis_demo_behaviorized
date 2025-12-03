@@ -5,12 +5,14 @@
 #include <memory>
 #include <mutex>
 
-
 #include <rclcpp/rclcpp.hpp>
 #include <behaviortree_cpp/action_node.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 
-
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 // from original pick ball node
 // #include <chrono>
 // #include <cmath>
@@ -20,21 +22,16 @@
 // #include <moveit_msgs/msg/robot_trajectory.hpp>
 // #include <tf2/LinearMath/Quaternion.h>
 
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-
 
 namespace tennis_demo
 {
 
-class PickBall : public BT::StatefulActionNode
+class DropBall : public BT::StatefulActionNode
 {
 public:
-    PickBall(const std::string& name, const BT::NodeConfig& config);
+    DropBall(const std::string& name, const BT::NodeConfig& config);
 
-    ~PickBall() override;
+    ~DropBall() override;
 
     static BT::PortsList providedPorts();
 

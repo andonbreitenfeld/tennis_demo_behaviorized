@@ -1,101 +1,99 @@
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
-  
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
-      
-      <!-- Startup: Claim lease, Power on, Undock -->
-      <Sequence name="StartupSequence">
-        <TriggerService service_name="/spot_driver/claim" timeout="5.0"/>
+      <SubTree ID="StartupSequence"/>
+      <NavigateToPose
+          target_pose="{bin_nav_pose}"
+          robot_nav_namespace="{nav_namespace}"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="StartupSequence">
+    <Sequence name="StartupRootSequence">
+
+      <!-- Parameters -->
+      <Script code="nav_namespace:='spot_nav'"/>
+      <Script code="bin_nav_frame:='spot_nav/map'"/>
+      <Script code="bin_tag_frame:='bin_tag_link'"/>
+      <Script code="bin_standoff:=1.2"/>
+
+      <!-- Robot Initialization -->
+      <Sequence name="RobotBootSequence">
+        <TriggerService service_name="/spot_driver/claim"   timeout="5.0"/>
         <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
-        <TriggerService service_name="/spot_driver/undock" timeout="10.0"/>
+        <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
       </Sequence>
 
-      <!-- Wait for bin detection (blocks until bin is detected) -->
+      <!-- Bin Initialization -->
       <RetryUntilSuccessful num_attempts="-1">
-        <CheckBinDetected/>
+        <Sequence name="InitializeBin">
+
+          <!-- Transform bin tag into map frame -->
+          <LookupTF ref_frame="{bin_nav_frame}"
+                    target_frame="{bin_tag_frame}"
+                    pose="{bin_tag_pose}"
+                    timeout_secs="1.0"/>
+
+          <!-- Compute approach goal from tag pose -->
+          <ComputeBinApproachGoal 
+              tag_pose="{bin_tag_pose}"
+              standoff="{bin_standoff}"
+              bin_nav_pose="{bin_nav_pose}"/>
+
+        </Sequence>
       </RetryUntilSuccessful>
-
-      <!-- Navigate to survey location (pose set in blackboard from C++ code) -->
-      <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
-
-      <!-- Main loop: Wait for ball, go to ball, go to bin, return to survey, repeat -->
-      <ForceSuccess>
-        <Repeat num_cycles="-1">
-          <Sequence name="BallCollectionCycle">
-            
-            <!-- Wait for ball detection -->
-            <RetryUntilSuccessful num_attempts="-1">
-              <CheckBallDetected/>
-            </RetryUntilSuccessful>
-
-            <!-- Get ball pose and navigate to it (uninterruptible sequence) -->
-            <Sequence name="GoToBallUninterruptible">
-              <GetBallPose ball_pose="{ball_pose}"/>
-              <NavigateToPose target_pose="{ball_pose}" robot_nav_namespace="spot_nav"/>
-              <Delay delay_msec="3000">
-                <AlwaysSuccess/>
-              </Delay>
-            </Sequence>
-
-            <!-- Pick ball, call subtree -->
-            <Sequence name="PickBall">
-              <GetBallPose ball_pose="{ball_pose}"/>
-              <NavigateToPose target_pose="{ball_pose}" robot_nav_namespace="spot_nav"/>
-              <Delay delay_msec="3000">
-                <AlwaysSuccess/>
-              </Delay>
-            </Sequence>
-
-            <!-- Get bin pose and navigate to it (uninterruptible sequence) -->
-            <Sequence name="GoToBinUninterruptible">
-              <GetBinPose bin_pose="{bin_pose}"/>
-              <NavigateToPose target_pose="{bin_pose}" robot_nav_namespace="spot_nav"/>
-              <Delay delay_msec="3000">
-                <AlwaysSuccess/>
-              </Delay>
-            </Sequence>
-
-            <!-- Drop ball, call subtree -->
-
-            <!-- Return to survey point -->
-            <NavigateToPose target_pose="{survey_pose}" robot_nav_namespace="spot_nav"/>
-
-          </Sequence>
-        </Repeat>
-      </ForceSuccess>
 
     </Sequence>
   </BehaviorTree>
 
-  <!-- Subtree to retract arm -->
-	<BehaviorTree ID="PickBall">
+  <!-- Subtree to pick up ball] -->
+	<BehaviorTree ID="PickBallSubtree">
 		<Sequence>
 			<!-- Port variables -->
 			<Script code="service_timeout:=15"/>
-			<Script code="open_gripper_service:= '/spot_manipulation_driver/open_gripper'"/>
-			<Script code="close_gripper_service:= '/spot_manipulation_driver/close_gripper'"/>
-			<Script code="stow_service:='/spot_manipulation_driver/stow_arm'"/>
-      <Script code="unstow_gripper_service:= '/spot_manipulation_driver/mini_unstow_arm'"/>
-
-			<!-- <Script code="postaffordance_downward:=POSTAFFORDANCE_DOWNWARD"/> -->
-			<!-- <Script code="retract:=RETRACT"/> -->
 
       <!-- Mini undock -->
+      <TriggerService service_name="/spot_manipulation_driver/mini_unstow_arm"  timeout="{service_timeout}"/>
 
 			<!-- Ensure gripper is open -->
-			<TriggerService service_name="{open_gripper_service}"  timeout="{service_timeout}"/>
+			<TriggerService service_name="/spot_manipulation_driver/open_gripper"  timeout="{service_timeout}"/>
 
       <!-- Custom MoveIt node (move to ball and rotate arm) -->
-
+      <PickBall ball_pose="{ball_pose}"/>
 
 	    <!-- Close the gripper, grabbing ball -->
-			<TriggerService service_name="{close_gripper_service}"  timeout="{service_timeout}"/>
+			<TriggerService service_name="/spot_manipulation_driver/close_gripper"  timeout="{service_timeout}"/>
 
 			<!-- Stow arm after grabbing ball-->
-			<TriggerService service_name="{stow_service}" timeout="{service_timeout}"/>
+			<TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
 			<GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
 			<BooleanCondition value="{is_stowed}"/>
+		
+		</Sequence>
+	</BehaviorTree>
 
+  <!-- Subtree to drop ball in bin -->
+	<BehaviorTree ID="DropBallSubtree">
+		<Sequence>
+			<!-- Port variables -->
+			<Script code="service_timeout:=15"/>
+
+      <!-- Mini unstow -->
+      <TriggerService service_name="/spot_manipulation_driver/mini_unstow_arm"  timeout="{service_timeout}"/>
+
+      <!-- Custom MoveIt node (move to ball and rotate arm) -->
+      <DropBall bin_nav_pose="{bin_nav_pose}"/>
+
+      <!-- Open gripper to drop ball -->
+			<TriggerService service_name="/spot_manipulation_driver/open_gripper"  timeout="{service_timeout}"/>
+
+	    <!-- Close the gripper after dropping -->
+			<TriggerService service_name="/spot_manipulation_driver/close_gripper"  timeout="{service_timeout}"/>
+
+			<!-- Stow arm after dropping -->
+			<TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
+			<GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
+			<BooleanCondition value="{is_stowed}"/>
 		
 		</Sequence>
 	</BehaviorTree>

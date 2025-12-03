@@ -1,12 +1,12 @@
-#include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
+#include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
 
 namespace tennis_demo
 {
 
-PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
+DropBall::DropBall(const std::string& name, const BT::NodeConfig& config)
     : BT::StatefulActionNode(name, config)
 {
-    node_ = rclcpp::Node::make_shared("pick_ball");
+    node_ = rclcpp::Node::make_shared("drop_ball");
     
     // MoveIt setup
     moveit::planning_interface::MoveGroupInterface::Options move_group_options(
@@ -29,7 +29,7 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     }
 }
 
-PickBall::~PickBall()
+DropBall::~DropBall()
 {
     // rclcpp::shutdown(); // chat says this could shut down ros on all nodes, should only be called once in main BT executable
     executor_.cancel();
@@ -43,35 +43,35 @@ PickBall::~PickBall()
 static BT::PortsList providedPorts()
     {
         return {
-            BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose")
+            BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("bin_nav_pose")
         };
     }
 
 
 // --- sequential running code ---
-BT::NodeStatus PickBall::onStart()
+BT::NodeStatus DropBall::onStart()
 {
-    auto pose = getInput<geometry_msgs::msg::PoseStamped>("ball_pose");
+    auto pose = getInput<geometry_msgs::msg::PoseStamped>("bin_nav_pose");
     if (!pose)
     {
         RCLCPP_ERROR(node_->get_logger(),
-                     "PickBall: missing input port [ball_pose]: %s",
+                     "DropBall: missing input port [bin_nav_pose]: %s",
                      pose.error().c_str());
         return BT::NodeStatus::FAILURE;
     }
 
-    geometry_msgs::msg::PoseStamped ball_pose = pose.value();
+    geometry_msgs::msg::PoseStamped bin_nav_pose = pose.value();
 
     // Launch async task
     future_ = std::async(std::launch::async,
-                         [this, ball_pose]() {
-                             return executePickAndPlace(ball_pose);
+                         [this, bin_nav_pose]() {
+                             return executePickAndPlace(bin_nav_pose);
                          });
 
     return BT::NodeStatus::RUNNING;
 }
 
-BT::NodeStatus PickBall::onRunning()
+BT::NodeStatus DropBall::onRunning()
 {
     using namespace std::chrono_literals;
 
@@ -84,18 +84,18 @@ BT::NodeStatus PickBall::onRunning()
     return BT::NodeStatus::RUNNING;
 }
 
-void PickBall::onHalted()
+void DropBall::onHalted()
 {
-    RCLCPP_WARN(node_->get_logger(), "PickBall halted");
+    RCLCPP_WARN(node_->get_logger(), "DropBall halted");
 }
 
-// --- move to approach and target pose logic ---
-bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
+// --- transform bin pose and move move to drop pose ---
+bool DropBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
 {
-    RCLCPP_INFO(node_->get_logger(), "PickBall: executing motion...");
+    RCLCPP_INFO(node_->get_logger(), "DropBall: executing motion...");
 
+    // transform input pose (bin pose) to spot body frame first
     geometry_msgs::msg::PoseStamped transformed;
-
     try {
         auto tf = tf_buffer_->lookupTransform(
             "body",
@@ -113,25 +113,18 @@ bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
     transformed.pose = rotatePoseRoll90(transformed.pose);
 
     // Approach pose
-    geometry_msgs::msg::Pose approach = transformed.pose;
-    approach.position.x -= 0.05;
-    approach.position.y += 0.03;
+    geometry_msgs::msg::Pose drop_pose = transformed.pose;
+    drop_pose.position.x += 0.6; // values found through trial and error, Spot consistently navigates to left side of tag
+    drop_pose.position.y -= 0.2;
 
-    moveToPose(approach, "approach");
+    moveToPose(drop_pose, "drop");
     rclcpp::sleep_for(std::chrono::seconds(3));
-
-    // Grasp pose with offsets
-    geometry_msgs::msg::Pose grasp = transformed.pose;
-    grasp.position.x += 0.03;
-    grasp.position.y += 0.03;
-
-    moveToPose(grasp, "grasp");
 
     return true;
 }
 
 // --- helper functions ---
-geometry_msgs::msg::Pose PickBall::rotatePoseRoll90(const geometry_msgs::msg::Pose &pose_body)
+geometry_msgs::msg::Pose DropBall::rotatePoseRoll90(const geometry_msgs::msg::Pose &pose_body)
     {
         tf2::Quaternion q_orig;
         tf2::fromMsg(pose_body.orientation, q_orig);
@@ -148,7 +141,7 @@ geometry_msgs::msg::Pose PickBall::rotatePoseRoll90(const geometry_msgs::msg::Po
         return out;
     }
 
-void PickBall::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std::string &pose_name)
+void DropBall::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std::string &pose_name)
 {
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     move_group_->setPoseTarget(target_pose);
