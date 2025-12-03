@@ -1,7 +1,5 @@
-#include "compute_bin_approach_goal.hpp"
-
+#include "tennis_demo_behaviorized/behaviors/compute_bin_approach_goal.hpp"
 #include <cmath>
-#include <rclcpp/rclcpp.hpp>
 
 ComputeBinApproachGoal::ComputeBinApproachGoal(
     const std::string& name,
@@ -29,14 +27,12 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
   // Get inputs
   // -------------------------
   auto tag_opt = getInput<PosePtr>("tag_pose");
-  if (!tag_opt || !tag_opt.value())
-  {
+  if (!tag_opt || !tag_opt.value()) {
     throw BT::RuntimeError("ComputeBinApproachGoal: missing input [tag_pose]");
   }
   PosePtr tag_ptr = tag_opt.value();
 
   double standoff = 1.2;
-  // If "standoff" is present on the blackboard, this will overwrite the default
   getInput<double>("standoff", standoff);
 
   const auto& tag = tag_ptr->pose;
@@ -52,22 +48,13 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
   const double qz = tag.orientation.z;
   const double qw = tag.orientation.w;
 
-  // -------------------------
-  // Compute tag +Z direction projected onto the map XY plane
-  //
-  // This uses the third column of the rotation matrix for the quaternion
-  // and takes only the x,y components.
-  // -------------------------
+  // Compute tag +Z in map frame (same as Python)
   double zmx = 2.0 * (qx * qz + qy * qw);
   double zmy = 2.0 * (qy * qz - qx * qw);
 
   double norm_xy = std::hypot(zmx, zmy);
-  if (norm_xy < 1e-6)
-  {
+  if (norm_xy < 1e-6) {
     // Too vertical — can't compute a horizontal approach direction
-    RCLCPP_WARN(
-        rclcpp::get_logger("ComputeBinApproachGoal"),
-        "Tag +Z is too vertical to compute a horizontal approach direction");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -75,15 +62,12 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
   zmy /= norm_xy;
 
   // -------------------------
-  // Compute approach position (stand-off from tag along +Z direction)
+  // Compute approach position
   // -------------------------
   const double stand_x = tag_x + zmx * standoff;
   const double stand_y = tag_y + zmy * standoff;
 
-  // Robot should face the tag:
-  // position is at stand_(x,y), tag is at (tag_x, tag_y),
-  // so the vector from robot -> tag is (tag_x - stand_x, tag_y - stand_y)
-  // which is proportional to (-zmx, -zmy)
+  // Robot should face the tag: +X points opposite of Z_tag
   const double yaw = std::atan2(-zmy, -zmx);
 
   const double half_yaw = yaw * 0.5;
@@ -94,40 +78,18 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
   // Build output PoseStamped
   // -------------------------
   PosePtr nav_goal = std::make_shared<geometry_msgs::msg::PoseStamped>();
-  *nav_goal = *tag_ptr;  // copy header (frame_id, stamp, etc.)
+  *nav_goal = *tag_ptr;  // copy header/frame_id
 
   nav_goal->pose.position.x = stand_x;
   nav_goal->pose.position.y = stand_y;
-  nav_goal->pose.position.z = 0.0;  // 2D nav assumption
+  nav_goal->pose.position.z = 0.0;
 
   nav_goal->pose.orientation.x = 0.0;
   nav_goal->pose.orientation.y = 0.0;
   nav_goal->pose.orientation.z = qz_nav;
   nav_goal->pose.orientation.w = qw_nav;
 
-  // -------------------------
-  // Log the result for debugging
-  // -------------------------
-  RCLCPP_INFO(
-      rclcpp::get_logger("ComputeBinApproachGoal"),
-      "bin_nav_pose computed:\n"
-      "  frame_id: %s\n"
-      "  position: (%.3f, %.3f, %.3f)\n"
-      "  orientation (z,w): (%.3f, %.3f)\n"
-      "  yaw: %.3f rad\n"
-      "  standoff: %.3f m",
-      nav_goal->header.frame_id.c_str(),
-      nav_goal->pose.position.x,
-      nav_goal->pose.position.y,
-      nav_goal->pose.position.z,
-      nav_goal->pose.orientation.z,
-      nav_goal->pose.orientation.w,
-      yaw,
-      standoff);
-
-  // -------------------------
   // Write to blackboard
-  // -------------------------
   setOutput<PosePtr>("bin_nav_pose", nav_goal);
 
   return BT::NodeStatus::SUCCESS;
