@@ -14,6 +14,5 @@ public:
                          const BT::NodeConfig& config);
 
   static BT::PortsList providedPorts();
-
   BT::NodeStatus tick() override;
 };

@@ -1,4 +1,5 @@
 #include "tennis_demo_behaviorized/behaviors/compute_bin_approach_goal.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include <cmath>
 
 ComputeBinApproachGoal::ComputeBinApproachGoal(
@@ -10,87 +11,68 @@ ComputeBinApproachGoal::ComputeBinApproachGoal(
 
 BT::PortsList ComputeBinApproachGoal::providedPorts()
 {
-  using PosePtr = std::shared_ptr<geometry_msgs::msg::PoseStamped>;
-
   return {
     BT::InputPort<PosePtr>("tag_pose"),
-    BT::InputPort<double>("standoff", 1.2),
+    BT::InputPort<double>("standoff"),
     BT::OutputPort<PosePtr>("bin_nav_pose")
   };
 }
 
 BT::NodeStatus ComputeBinApproachGoal::tick()
 {
-  using PosePtr = std::shared_ptr<geometry_msgs::msg::PoseStamped>;
-
-  // -------------------------
-  // Get inputs
-  // -------------------------
-  auto tag_opt = getInput<PosePtr>("tag_pose");
-  if (!tag_opt || !tag_opt.value()) {
-    throw BT::RuntimeError("ComputeBinApproachGoal: missing input [tag_pose]");
+  PosePtr tag_pose_ptr;
+  if (!getInput<PosePtr>("tag_pose", tag_pose_ptr))
+  {
+    RCLCPP_ERROR(rclcpp::get_logger("ComputeBinApproachGoal"), 
+      "tag_pose missing or wrong type");
+    return BT::NodeStatus::FAILURE;
   }
-  PosePtr tag_ptr = tag_opt.value();
 
-  double standoff = 1.2;
+  if (!tag_pose_ptr)
+  {
+    RCLCPP_ERROR(rclcpp::get_logger("ComputeBinApproachGoal"),
+      "tag_pose pointer is null");
+    return BT::NodeStatus::FAILURE;
+  }
+
+  double standoff = 1.3;
   getInput<double>("standoff", standoff);
 
-  const auto& tag = tag_ptr->pose;
+  auto tag = tag_pose_ptr->pose;
 
-  // -------------------------
-  // Extract tag pose
-  // -------------------------
-  const double tag_x = tag.position.x;
-  const double tag_y = tag.position.y;
+  double qx = tag.orientation.x;
+  double qy = tag.orientation.y;
+  double qz = tag.orientation.z;
+  double qw = tag.orientation.w;
 
-  const double qx = tag.orientation.x;
-  const double qy = tag.orientation.y;
-  const double qz = tag.orientation.z;
-  const double qw = tag.orientation.w;
-
-  // Compute tag +Z in map frame (same as Python)
   double zmx = 2.0 * (qx * qz + qy * qw);
   double zmy = 2.0 * (qy * qz - qx * qw);
 
   double norm_xy = std::hypot(zmx, zmy);
-  if (norm_xy < 1e-6) {
-    // Too vertical — can't compute a horizontal approach direction
+  if (norm_xy < 1e-6)
     return BT::NodeStatus::FAILURE;
-  }
 
   zmx /= norm_xy;
   zmy /= norm_xy;
 
-  // -------------------------
-  // Compute approach position
-  // -------------------------
-  const double stand_x = tag_x + zmx * standoff;
-  const double stand_y = tag_y + zmy * standoff;
+  auto nav_pose = std::make_shared<PoseStamped>();
+  *nav_pose = *tag_pose_ptr; // copy header
 
-  // Robot should face the tag: +X points opposite of Z_tag
-  const double yaw = std::atan2(-zmy, -zmx);
+  nav_pose->pose.position.x = tag.position.x + zmx * standoff;
+  nav_pose->pose.position.y = tag.position.y + zmy * standoff;
+  nav_pose->pose.position.z = 0.0;
 
-  const double half_yaw = yaw * 0.5;
-  const double qz_nav   = std::sin(half_yaw);
-  const double qw_nav   = std::cos(half_yaw);
+  double yaw = std::atan2(-zmy, -zmx);
+  nav_pose->pose.orientation.x = 0.0;
+  nav_pose->pose.orientation.y = 0.0;
+  nav_pose->pose.orientation.z = std::sin(yaw * 0.5);
+  nav_pose->pose.orientation.w = std::cos(yaw * 0.5);
 
-  // -------------------------
-  // Build output PoseStamped
-  // -------------------------
-  PosePtr nav_goal = std::make_shared<geometry_msgs::msg::PoseStamped>();
-  *nav_goal = *tag_ptr;  // copy header/frame_id
+  // WRITE IT TO THE BLACKBOARD (the thing that was missing)
+  setOutput("bin_nav_pose", nav_pose);
 
-  nav_goal->pose.position.x = stand_x;
-  nav_goal->pose.position.y = stand_y;
-  nav_goal->pose.position.z = 0.0;
-
-  nav_goal->pose.orientation.x = 0.0;
-  nav_goal->pose.orientation.y = 0.0;
-  nav_goal->pose.orientation.z = qz_nav;
-  nav_goal->pose.orientation.w = qw_nav;
-
-  // Write to blackboard
-  setOutput<PosePtr>("bin_nav_pose", nav_goal);
+  RCLCPP_INFO(rclcpp::get_logger("ComputeBinApproachGoal"),
+    "bin_nav_pose successfully written to blackboard!");
 
   return BT::NodeStatus::SUCCESS;
 }

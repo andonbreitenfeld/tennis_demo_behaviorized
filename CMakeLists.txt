@@ -29,9 +29,7 @@ include_directories(
 # Build the executable
 add_executable(run_tennis_tree 
   src/run_tennis_tree.cpp
-  src/behaviors/check_ball_detected.cpp
   src/behaviors/compute_bin_approach_goal.cpp
-  src/behaviors/get_ball_pose.cpp
   src/behaviors/lookup_tf.cpp
 )
 
