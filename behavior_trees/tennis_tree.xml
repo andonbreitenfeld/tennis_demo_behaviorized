@@ -1,5 +1,5 @@
-<root BTCPP_format="4" main_tree_to_execute="MainTree">
-  <BehaviorTree ID="MainTree">
+<root BTCPP_format="4" main_tree_to_execute="DropBallSubtree">
+  <!-- <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
       <SubTree ID="StartupSequence"/>
       <NavigateToPose
@@ -9,33 +9,33 @@
   </BehaviorTree>
 
   <BehaviorTree ID="StartupSequence">
-    <Sequence name="StartupRootSequence">
+    <Sequence name="StartupRootSequence"> -->
 
       <!-- Parameters -->
-      <Script code="nav_namespace:='spot_nav'"/>
+      <!-- <Script code="nav_namespace:='spot_nav'"/>
       <Script code="bin_nav_frame:='spot_nav/map'"/>
       <Script code="bin_tag_frame:='bin_tag_link'"/>
-      <Script code="bin_standoff:=1.2"/>
+      <Script code="bin_standoff:=1.2"/> -->
 
       <!-- Robot Initialization -->
-      <Sequence name="RobotBootSequence">
+      <!-- <Sequence name="RobotBootSequence">
         <TriggerService service_name="/spot_driver/claim"   timeout="5.0"/>
         <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
         <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
-      </Sequence>
+      </Sequence> -->
 
       <!-- Bin Initialization -->
-      <RetryUntilSuccessful num_attempts="-1">
-        <Sequence name="InitializeBin">
+      <!-- <RetryUntilSuccessful num_attempts="-1">
+        <Sequence name="InitializeBin"> -->
 
           <!-- Transform bin tag into map frame -->
-          <LookupTF ref_frame="{bin_nav_frame}"
+          <!-- <LookupTF ref_frame="{bin_nav_frame}"
                     target_frame="{bin_tag_frame}"
                     pose="{bin_tag_pose}"
-                    timeout_secs="1.0"/>
+                    timeout_secs="1.0"/> -->
 
           <!-- Compute approach goal from tag pose -->
-          <ComputeBinApproachGoal 
+          <!-- <ComputeBinApproachGoal 
               tag_pose="{bin_tag_pose}"
               standoff="{bin_standoff}"
               bin_nav_pose="{bin_nav_pose}"/>
@@ -44,13 +44,16 @@
       </RetryUntilSuccessful>
 
     </Sequence>
-  </BehaviorTree>
+  </BehaviorTree> -->
 
-  <!-- Subtree to pick up ball] -->
+  <!-- Subtree to pick up ball -->
 	<BehaviorTree ID="PickBallSubtree">
 		<Sequence>
 			<!-- Port variables -->
 			<Script code="service_timeout:=15"/>
+      <!-- manually testing ball pose -->
+      <Script code="ball_pose:={ x:=1.0, y:=2.0, z:=0.3, qx:=0, qy:=0, qz:=0, qw:=1 }"/>
+
 
       <!-- Mini undock -->
       <TriggerService service_name="/spot_manipulation_driver/mini_unstow_arm"  timeout="{service_timeout}"/>
@@ -77,6 +80,8 @@
 		<Sequence>
 			<!-- Port variables -->
 			<Script code="service_timeout:=15"/>
+      <!-- manually testing bin pose -->
+      <Script code="bin_nav_pose:={ x:=1.0, y:=2.0, z:=0.3, qx:=0, qy:=0, qz:=0, qw:=1 }"/>
 
       <!-- Mini unstow -->
       <TriggerService service_name="/spot_manipulation_driver/mini_unstow_arm"  timeout="{service_timeout}"/>
@@ -92,8 +97,8 @@
 
 			<!-- Stow arm after dropping -->
 			<TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
-			<GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
-			<BooleanCondition value="{is_stowed}"/>
+			<!-- <GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
+			<BooleanCondition value="{is_stowed}"/> -->
 		
 		</Sequence>
 	</BehaviorTree>

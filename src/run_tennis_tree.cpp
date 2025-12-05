@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     factory.registerNodeType<tennis_demo::GetBallPose>("GetBallPose");
     factory.registerNodeType<tennis_demo::GetBinPose>("GetBinPose");
     factory.registerNodeType<tennis_demo::PickBall>("PickBall");
-    // factory.registerNodeType<tennis_demo::DropBall>("DropBall");
+    factory.registerNodeType<tennis_demo::DropBall>("DropBall");
 
     // Register utility nodes
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
