@@ -20,6 +20,7 @@ find_package(spot_behaviors REQUIRED)
 find_package(nrg_utility_behaviors REQUIRED)
 find_package(nrg_navigation_behaviors REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Specify include directories
 include_directories(
@@ -33,7 +34,7 @@ add_executable(run_tennis_tree
   src/behaviors/lookup_tf.cpp
 )
 
-# Link executable with libraries
+# Link executable with ament dependencies
 ament_target_dependencies(run_tennis_tree
   rclcpp
   behaviortree_cpp
@@ -46,22 +47,30 @@ ament_target_dependencies(run_tennis_tree
   ament_index_cpp
 )
 
+# Link yaml-cpp explicitly (non-ament library)
+target_link_libraries(run_tennis_tree
+  yaml-cpp
+)
+
 # Specify header search path
 target_include_directories(run_tennis_tree PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-# Install executable
 install(TARGETS 
   run_tennis_tree
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install behavior trees
 install(
   DIRECTORY behavior_trees/
   DESTINATION share/${PROJECT_NAME}/behavior_trees
+)
+
+install(
+  DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
 )
 
 if(BUILD_TESTING)

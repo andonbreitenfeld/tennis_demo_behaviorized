@@ -1,20 +1,35 @@
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
+
+  <!-- ===================== MAIN TREE ===================== -->
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
 
       <!-- Map bin_nav_pose out of the subtree into root BB -->
       <SubTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}"/>
 
-      <!-- 5s delay, then navigate using Nav2 under /spot_nav -->
-      <Delay delay_msec="5000">
-        <NavigateToPose
-            robot_nav_namespace="spot_nav"
-            target_pose="{bin_nav_pose}"/>
-      </Delay>
+      <!-- After startup, patrol between the two YAML-defined poses forever -->
+      <Repeat num_cycles="-1">
+        <Sequence name="PatrolSequence">
+
+          <!-- Go to poseA -->
+          <NavigateToPose
+              robot_nav_namespace="spot_nav"
+              target_pose="{poseA}"/>
+
+          <!-- Then go to poseB -->
+          <NavigateToPose
+              robot_nav_namespace="spot_nav"
+              target_pose="{poseB}"/>
+
+        </Sequence>
+      </Repeat>
 
     </Sequence>
   </BehaviorTree>
 
+
+
+  <!-- ===================== STARTUP SEQUENCE ===================== -->
   <BehaviorTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}">
     <Sequence name="StartupRootSequence">
 
@@ -25,7 +40,7 @@
 
       <!-- Robot Initialization -->
       <Sequence name="RobotBootSequence">
-        <TriggerService service_name="/spot_driver/claim"   timeout="5.0"/>
+        <TriggerService service_name="/spot_driver/claim"    timeout="5.0"/>
         <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
         <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
       </Sequence>
@@ -49,4 +64,5 @@
 
     </Sequence>
   </BehaviorTree>
+
 </root>
