@@ -13,10 +13,8 @@
 #include "tennis_demo_behaviorized/behaviors/compute_bin_approach_goal.hpp"
 #include "tennis_demo_behaviorized/behaviors/lookup_tf.hpp"
 
-// Utility behaviors
+// NRG behaviors
 #include <nrg_utility_behaviors/trigger_service.hpp>
-
-// Navigation behavior from nrg_navigation_behaviors
 #include <nrg_navigation_behaviors/navigate_to_pose.hpp>
 
 
@@ -27,9 +25,6 @@ int main(int argc, char** argv)
 
   try
   {
-    // ------------------------------------------------------------------
-    // BehaviorTree factory
-    // ------------------------------------------------------------------
     BT::BehaviorTreeFactory factory;
 
     // Register custom nodes
@@ -42,9 +37,7 @@ int main(int argc, char** argv)
     // NavigateToPose from nrg_navigation_behaviors
     factory.registerNodeType<nrg_navigation_behaviors::NavigateToPose>("NavigateToPose");
 
-    // ------------------------------------------------------------------
     // Load behavior tree XML
-    // ------------------------------------------------------------------
     const std::string share_dir =
         ament_index_cpp::get_package_share_directory("tennis_demo_behaviorized");
     const std::string xml_path = share_dir + "/behavior_trees/tennis_tree.xml";
@@ -53,9 +46,7 @@ int main(int argc, char** argv)
 
     auto tree = factory.createTreeFromFile(xml_path);
 
-    // ------------------------------------------------------------------
-    // Load navigation waypoints from YAML and put two poses on blackboard
-    // ------------------------------------------------------------------
+    // Load navigation waypoints from YAML and put poses on blackboard
     const std::string yaml_path = share_dir + "/config/waypoints.yaml";
     std::cout << "Loading waypoints from: " << yaml_path << std::endl;
 
@@ -95,9 +86,6 @@ int main(int argc, char** argv)
     bb->set("poseA", poseA);
     bb->set("poseB", poseB);
 
-    // ------------------------------------------------------------------
-    // Run the tree until it finishes (SUCCESS or FAILURE)
-    // ------------------------------------------------------------------
     tree.tickWhileRunning();
   }
   catch (const std::exception& e)

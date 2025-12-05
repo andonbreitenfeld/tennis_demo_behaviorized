@@ -1,35 +1,29 @@
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
-
-  <!-- ===================== MAIN TREE ===================== -->
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
-
-      <!-- Map bin_nav_pose out of the subtree into root BB -->
       <SubTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}"/>
 
-      <!-- After startup, patrol between the two YAML-defined poses forever -->
+      <!-- Patrol between 2 Waypoints -->
       <Repeat num_cycles="-1">
         <Sequence name="PatrolSequence">
 
-          <!-- Go to poseA -->
           <NavigateToPose
               robot_nav_namespace="spot_nav"
               target_pose="{poseA}"/>
 
-          <!-- Then go to poseB -->
           <NavigateToPose
               robot_nav_namespace="spot_nav"
               target_pose="{poseB}"/>
 
         </Sequence>
       </Repeat>
-
+      
     </Sequence>
   </BehaviorTree>
 
 
 
-  <!-- ===================== STARTUP SEQUENCE ===================== -->
+  <!-- Robot & Bin Initialization -->
   <BehaviorTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}">
     <Sequence name="StartupRootSequence">
 

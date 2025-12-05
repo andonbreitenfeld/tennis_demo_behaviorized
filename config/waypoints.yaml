@@ -1,6 +1,6 @@
 waypoints:
   - frame_id: spot_nav/map
-    position: {x: 1.5, y: 0.0, z: 0}
+    position: {x: 1.5, y: -0.5, z: 0}
     orientation: {x: 0, y: 0, z: 0.7071068, w: -0.7071068}
   - frame_id: spot_nav/map
     position: {x: 2.5, y: -4.0, z: 0}
