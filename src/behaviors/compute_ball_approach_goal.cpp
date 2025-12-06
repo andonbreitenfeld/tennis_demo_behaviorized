@@ -27,14 +27,14 @@ ComputeBallApproachGoal::ComputeBallApproachGoal(
 
 BT::PortsList ComputeBallApproachGoal::providedPorts()
 {
-  using namespace BT;
+  using PosePtr = ComputeBallApproachGoal::PosePtr;
 
   return {
-    InputPort<std::string>("nav_frame"),
-    InputPort<std::string>("robot_frame"),
-    InputPort<double>("standoff"),
-    InputPort<geometry_msgs::msg::PoseStamped>("ball_pose"),
-    OutputPort<geometry_msgs::msg::PoseStamped>("ball_nav_pose")
+    BT::InputPort<std::string>("nav_frame"),
+    BT::InputPort<std::string>("robot_frame"),
+    BT::InputPort<double>("standoff"),
+    BT::InputPort<PosePtr>("ball_pose"),
+    BT::OutputPort<PosePtr>("ball_nav_pose")
   };
 }
 
@@ -44,26 +44,32 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  // Process TF subscriptions
   rclcpp::spin_some(node_);
 
-  // Read inputs
   auto nav_frame_res   = getInput<std::string>("nav_frame");
   auto robot_frame_res = getInput<std::string>("robot_frame");
   auto standoff_res    = getInput<double>("standoff");
-  auto ball_pose_res   = getInput<geometry_msgs::msg::PoseStamped>("ball_pose");
+  PosePtr ball_pose_ptr;
 
-  if (!nav_frame_res || !robot_frame_res || !standoff_res || !ball_pose_res) {
-    RCLCPP_WARN(node_->get_logger(), "ComputeBallApproachGoal: missing required input port");
+  if (!nav_frame_res || !robot_frame_res || !standoff_res ||
+      !getInput<PosePtr>("ball_pose", ball_pose_ptr))
+  {
+    RCLCPP_WARN(node_->get_logger(),
+                "ComputeBallApproachGoal: missing required input port");
+    return BT::NodeStatus::FAILURE;
+  }
+
+  if (!ball_pose_ptr) {
+    RCLCPP_WARN(node_->get_logger(),
+                "ComputeBallApproachGoal: ball_pose pointer is null");
     return BT::NodeStatus::FAILURE;
   }
 
   const std::string nav_frame   = nav_frame_res.value();
   const std::string robot_frame = robot_frame_res.value();
   const double standoff         = standoff_res.value();
-  geometry_msgs::msg::PoseStamped ball_pose = ball_pose_res.value();
 
-  // Ensure ball pose is in nav_frame
+  geometry_msgs::msg::PoseStamped ball_pose = *ball_pose_ptr;
   geometry_msgs::msg::PoseStamped ball_in_nav;
 
   try {
@@ -90,7 +96,6 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double ball_x = ball_in_nav.pose.position.x;
   const double ball_y = ball_in_nav.pose.position.y;
 
-  // Get robot pose in nav_frame
   geometry_msgs::msg::TransformStamped tf_robot;
   rclcpp::Time now = node_->get_clock()->now();
 
@@ -110,7 +115,6 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double robot_x = tf_robot.transform.translation.x;
   const double robot_y = tf_robot.transform.translation.y;
 
-  // Direction from robot -> ball
   const double dx = ball_x - robot_x;
   const double dy = ball_y - robot_y;
   const double dist = std::hypot(dx, dy);
@@ -124,30 +128,28 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double ux = dx / dist;
   const double uy = dy / dist;
 
-  // Goal is standoff meters "behind" the ball along robot->ball direction
   const double goal_x = ball_x - ux * standoff;
   const double goal_y = ball_y - uy * standoff;
 
-  // Face the ball: orientation along (ux, uy)
   const double yaw = std::atan2(uy, ux);
   const double qz = std::sin(yaw / 2.0);
   const double qw = std::cos(yaw / 2.0);
 
-  geometry_msgs::msg::PoseStamped goal;
-  goal.header.stamp = now;
-  goal.header.frame_id = nav_frame;
+  PosePtr goal_ptr = std::make_shared<PoseStamped>();
+  goal_ptr->header.stamp = now;
+  goal_ptr->header.frame_id = nav_frame;
 
-  goal.pose.position.x = goal_x;
-  goal.pose.position.y = goal_y;
-  goal.pose.position.z = 0.0;
+  goal_ptr->pose.position.x = goal_x;
+  goal_ptr->pose.position.y = goal_y;
+  goal_ptr->pose.position.z = 0.0;
 
-  goal.pose.orientation.x = 0.0;
-  goal.pose.orientation.y = 0.0;
-  goal.pose.orientation.z = qz;
-  goal.pose.orientation.w = qw;
+  goal_ptr->pose.orientation.x = 0.0;
+  goal_ptr->pose.orientation.y = 0.0;
+  goal_ptr->pose.orientation.z = qz;
+  goal_ptr->pose.orientation.w = qw;
 
-  setOutput("ball_nav_pose", goal);
+  setOutput("ball_nav_pose", goal_ptr);
   return BT::NodeStatus::SUCCESS;
 }
 
-}  // namespace tennis_demo_behaviorized
+}

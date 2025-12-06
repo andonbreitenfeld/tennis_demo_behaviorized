@@ -6,10 +6,10 @@
       <SubTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}"/>
 
       <Repeat num_cycles="-1">
-        <Fallback name="FetchOrPatrol">
-          <SubTree ID="FetchBall" ball_pose="{ball_pose}"/>
-          <SubTree ID="Patrol"/>
-        </Fallback>
+        <ReactiveFallback name="FetchOrPatrol">
+          <SubTree ID="FetchBall"/>
+          <SubTree ID="Patrol" poseA="{poseA}" poseB="{poseB}"/>
+        </ReactiveFallback>
       </Repeat>
 
     </Sequence>
@@ -57,10 +57,16 @@
       <NavigateToPose
           robot_nav_namespace="spot_nav"
           target_pose="{poseA}"/>
+      <Delay delay_msec="5000">
+        <AlwaysSuccess name="WaitAfterA"/>
+      </Delay>
 
       <NavigateToPose
           robot_nav_namespace="spot_nav"
           target_pose="{poseB}"/>
+      <Delay delay_msec="10000">
+        <AlwaysSuccess name="WaitAfterB"/>
+      </Delay>
 
     </Sequence>
   </BehaviorTree>
@@ -69,10 +75,6 @@
 
   <!-- Fetch Ball -->
   <BehaviorTree ID="FetchBall">
-    <SubTreePorts>
-      <Port name="ball_pose" direction="output"/>
-    </SubTreePorts>
-
     <Sequence name="FetchBallSequence">
 
       <!-- Get stable ball pose -->
@@ -80,7 +82,7 @@
           topic="/ball_stable_pose"
           geometry_msgs::msg::PoseStamped="{ball_pose}"
           transient_local="false"
-          timeout="0.5"/>
+          timeout="3.0"/>
 
       <!-- Compute Nav2 Goal -->
       <ComputeBallApproachGoal
@@ -97,6 +99,5 @@
 
     </Sequence>
   </BehaviorTree>
-
 
 </root>

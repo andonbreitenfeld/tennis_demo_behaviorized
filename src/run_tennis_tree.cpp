@@ -16,8 +16,8 @@
 
 // NRG behaviors
 #include <nrg_utility_behaviors/trigger_service.hpp>
+#include <nrg_utility_behaviors/get_message_from_topic.hpp>
 #include <nrg_navigation_behaviors/navigate_to_pose.hpp>
-
 
 int main(int argc, char** argv)
 {
@@ -33,8 +33,9 @@ int main(int argc, char** argv)
     factory.registerNodeType<ComputeBinApproachGoal>("ComputeBinApproachGoal");
     factory.registerNodeType<tennis_demo_behaviorized::ComputeBallApproachGoal>("ComputeBallApproachGoal");
 
-    // TriggerService (claim / power_on / undock)
+    // NRG utility behaviors
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
+    factory.registerNodeType<nrg_utility_behaviors::GetMessageFromTopic>("GetMessageFromTopic");
 
     // NavigateToPose from nrg_navigation_behaviors
     factory.registerNodeType<nrg_navigation_behaviors::NavigateToPose>("NavigateToPose");
