@@ -1,14 +1,54 @@
 #include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
 #include <future>
 
-namespace tennis_demo
-{
-
 PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     : BT::StatefulActionNode(name, config)
 {
+    try {
+
     node_ = rclcpp::Node::make_shared("pick_ball");
     
+    // Get robot_description from move_group's namespace
+    auto param_client = std::make_shared<rclcpp::SyncParametersClient>(
+        node_, "/spot_moveit/move_group");
+    
+    // Wait for the parameter service to be available
+    if (!param_client->wait_for_service(std::chrono::seconds(10))) {
+        RCLCPP_ERROR(node_->get_logger(), 
+            "Parameter service /spot_moveit/move_group not available");
+        throw std::runtime_error("move_group parameter service not available");
+    }
+    
+    // Get the robot_description parameter
+    auto params = param_client->get_parameters({
+        "robot_description",
+        "robot_description_semantic",
+        });
+    if (params.size() < 2) {
+        RCLCPP_ERROR(node_->get_logger(), 
+            "Could not get required parameters from /spot_moveit/move_group");
+        throw std::runtime_error("Required parameters not found");
+        }
+    
+    // Check robot_description
+    if (params[0].get_type() == rclcpp::PARAMETER_NOT_SET) {
+        RCLCPP_ERROR(node_->get_logger(), "robot_description not found");
+        throw std::runtime_error("robot_description not found");
+    }
+    
+    // Check robot_description_semantic
+    if (params[1].get_type() == rclcpp::PARAMETER_NOT_SET) {
+        RCLCPP_ERROR(node_->get_logger(), "robot_description_semantic not found");
+        throw std::runtime_error("robot_description_semantic not found");
+    }
+
+    std::string robot_description = params[0].as_string();
+    std::string robot_description_semantic = params[1].as_string();
+
+    // Declare parameters on this node
+    node_->declare_parameter("robot_description", robot_description);
+    node_->declare_parameter("robot_description_semantic", robot_description_semantic);
+
     // MoveIt setup
     moveit::planning_interface::MoveGroupInterface::Options move_group_options(
         "arm", "robot_description", "/spot_moveit/robot_description");
@@ -26,7 +66,12 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     // Spin ROS in background
     executor_.add_node(node_);
     spin_thread_ = std::thread([this]() { executor_.spin(); });
-
+    }
+    
+    catch (const std::exception& e) {
+        std::cerr << "PickBall constructor EXCEPTION: " << e.what() << std::endl;
+        throw;  // rethrow so BT can fail clearly
+    }
 }
 
 PickBall::~PickBall()
@@ -43,7 +88,7 @@ PickBall::~PickBall()
 BT::PortsList PickBall::providedPorts()
     {
         return {
-            BT::InputPort<geometry_msgs::msg::PoseStamped>("ball_pose")
+            BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose")
         };
     }
 
@@ -51,7 +96,7 @@ BT::PortsList PickBall::providedPorts()
 // --- sequential running code ---
 BT::NodeStatus PickBall::onStart()
 {
-    auto pose = getInput<geometry_msgs::msg::PoseStamped>("ball_pose");
+    auto pose = getInput<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose");
     if (!pose)
     {
         RCLCPP_ERROR(node_->get_logger(),
@@ -60,7 +105,8 @@ BT::NodeStatus PickBall::onStart()
         return BT::NodeStatus::FAILURE;
     }
 
-    geometry_msgs::msg::PoseStamped ball_pose = pose.value();
+    // Dereferencing shared pointer, keeps Andon's shared_ptr structure in place
+    geometry_msgs::msg::PoseStamped ball_pose = *pose.value();
 
     // Launch async task
     future_ = std::async(std::launch::async,
@@ -173,5 +219,3 @@ void PickBall::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std
     }
 }
 
-}
- // namespace tennis_demo

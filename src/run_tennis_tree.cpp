@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     factory.registerNodeType<tennis_demo::CheckBallDetected>("CheckBallDetected");
     factory.registerNodeType<tennis_demo::GetBallPose>("GetBallPose");
     factory.registerNodeType<tennis_demo::GetBinPose>("GetBinPose");
-    factory.registerNodeType<tennis_demo::PickBall>("PickBall");
+    factory.registerNodeType<PickBall>("PickBall");
     factory.registerNodeType<DropBall>("DropBall");
 
     // Register utility nodes
@@ -73,15 +73,27 @@ int main(int argc, char **argv)
     // hard code test point for manipulation BT testing
     auto bin_nav_pose = std::make_shared<geometry_msgs::msg::PoseStamped>();
     bin_nav_pose->header.frame_id = "spot_nav/map";
-    bin_nav_pose->pose.position.x = 1.63907;  // Replace with actual coordinates (2.0)
-    bin_nav_pose->pose.position.y = -0.464794;  // Replace with actual coordinates (-4.0)
-    bin_nav_pose->pose.position.z = 0.8;
+    bin_nav_pose->pose.position.x = 2.0;  // Replace with actual coordinates (2.0)
+    bin_nav_pose->pose.position.y = 0.0;  // Replace with actual coordinates (-4.0)
+    bin_nav_pose->pose.position.z = 1.2;
     // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
-    bin_nav_pose->pose.orientation.x = 0.0;
-    bin_nav_pose->pose.orientation.y = 0.0;
-    bin_nav_pose->pose.orientation.z = -0.701875;
-    bin_nav_pose->pose.orientation.w = 0.7123;
+    // bin_nav_pose->pose.orientation.x = 0.0;
+    // bin_nav_pose->pose.orientation.y = 0.0;
+    // bin_nav_pose->pose.orientation.z = -0.0313429;
+    // bin_nav_pose->pose.orientation.w = 0.999509;
     tree.rootBlackboard()->set<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("bin_nav_pose", bin_nav_pose);
+
+    auto ball_pose = std::make_shared<geometry_msgs::msg::PoseStamped>();
+    ball_pose->header.frame_id = "spot_nav/map";
+    ball_pose->pose.position.x = 2.0;  // Replace with actual coordinates (2.0)
+    ball_pose->pose.position.y = 0.0;  // Replace with actual coordinates (-4.0)
+    ball_pose->pose.position.z = 1.2;
+    // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
+    // ball_pose->pose.orientation.x = 0.0;
+    // ball_pose->pose.orientation.y = 0.0;
+    // ball_pose->pose.orientation.z = -0.0313429;
+    // ball_pose->pose.orientation.w = 0.999509;
+    tree.rootBlackboard()->set<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose", ball_pose);
 
     // Tick the tree
     tree.tickWhileRunning();

@@ -15,18 +15,6 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-// from original pick ball node
-// #include <chrono>
-// #include <cmath>
-// #include <iostream>
-// #include <atomic>
-// #include <geometry_msgs/msg/pose.hpp>
-// #include <moveit_msgs/msg/robot_trajectory.hpp>
-// #include <tf2/LinearMath/Quaternion.h>
-
-
-namespace tennis_demo
-{
 
 class PickBall : public BT::StatefulActionNode
 {
@@ -62,4 +50,3 @@ private:
 
 };
 
-} // namespace tennis_demo

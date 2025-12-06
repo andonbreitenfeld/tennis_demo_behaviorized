@@ -1,14 +1,53 @@
 #include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
 #include <future>
 
-// namespace tennis_demo
-// {
-
 DropBall::DropBall(const std::string& name, const BT::NodeConfig& config)
     : BT::StatefulActionNode(name, config)
 {
+    try {
     node_ = rclcpp::Node::make_shared("drop_ball");
+
+    // Get robot_description from move_group's namespace
+    auto param_client = std::make_shared<rclcpp::SyncParametersClient>(
+        node_, "/spot_moveit/move_group");
     
+    // Wait for the parameter service to be available
+    if (!param_client->wait_for_service(std::chrono::seconds(10))) {
+        RCLCPP_ERROR(node_->get_logger(), 
+            "Parameter service /spot_moveit/move_group not available");
+        throw std::runtime_error("move_group parameter service not available");
+    }
+    
+    // Get the robot_description parameter
+    auto params = param_client->get_parameters({
+        "robot_description",
+        "robot_description_semantic",
+        });
+    if (params.size() < 2) {
+        RCLCPP_ERROR(node_->get_logger(), 
+            "Could not get required parameters from /spot_moveit/move_group");
+        throw std::runtime_error("Required parameters not found");
+        }
+    
+    // Check robot_description
+    if (params[0].get_type() == rclcpp::PARAMETER_NOT_SET) {
+        RCLCPP_ERROR(node_->get_logger(), "robot_description not found");
+        throw std::runtime_error("robot_description not found");
+    }
+    
+    // Check robot_description_semantic
+    if (params[1].get_type() == rclcpp::PARAMETER_NOT_SET) {
+        RCLCPP_ERROR(node_->get_logger(), "robot_description_semantic not found");
+        throw std::runtime_error("robot_description_semantic not found");
+    }
+
+    std::string robot_description = params[0].as_string();
+    std::string robot_description_semantic = params[1].as_string();
+
+    // Declare parameters on this node
+    node_->declare_parameter("robot_description", robot_description);
+    node_->declare_parameter("robot_description_semantic", robot_description_semantic);
+
     // MoveIt setup
     moveit::planning_interface::MoveGroupInterface::Options move_group_options(
         "arm", "robot_description", "/spot_moveit");
@@ -26,6 +65,12 @@ DropBall::DropBall(const std::string& name, const BT::NodeConfig& config)
     // Spin ROS in background
     executor_.add_node(node_);
     spin_thread_ = std::thread([this]() { executor_.spin(); });
+    }
+    
+    catch (const std::exception& e) {
+        std::cerr << "DropBall constructor EXCEPTION: " << e.what() << std::endl;
+        throw;  // rethrow so BT can fail clearly
+    }
     
 }
 
@@ -43,7 +88,7 @@ DropBall::~DropBall()
 BT::PortsList DropBall::providedPorts()
     {
         return {
-            BT::InputPort<geometry_msgs::msg::PoseStamped>("bin_nav_pose")
+            BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("bin_nav_pose") 
         };
     }
 
@@ -51,7 +96,7 @@ BT::PortsList DropBall::providedPorts()
 // --- sequential running code ---
 BT::NodeStatus DropBall::onStart()
 {
-    auto pose = getInput<geometry_msgs::msg::PoseStamped>("bin_nav_pose");
+    auto pose = getInput<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("bin_nav_pose");
     if (!pose)
     {
         RCLCPP_ERROR(node_->get_logger(),
@@ -60,7 +105,7 @@ BT::NodeStatus DropBall::onStart()
         return BT::NodeStatus::FAILURE;
     }
 
-    geometry_msgs::msg::PoseStamped bin_nav_pose = pose.value();
+    geometry_msgs::msg::PoseStamped bin_nav_pose = *pose.value();
 
     // Launch async task
     future_ = std::async(std::launch::async,
@@ -114,8 +159,8 @@ bool DropBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
 
     // Approach pose
     geometry_msgs::msg::Pose drop_pose = transformed.pose;
-    drop_pose.position.x += 0.6; // values found through trial and error, Spot consistently navigates to left side of tag
-    drop_pose.position.y -= 0.2;
+    // drop_pose.position.x += 0.6; // values found through trial and error, Spot consistently navigates to left side of tag
+    // drop_pose.position.y -= 0.2;
 
     moveToPose(drop_pose, "drop");
     rclcpp::sleep_for(std::chrono::seconds(3));
@@ -166,5 +211,3 @@ void DropBall::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std
     }
 }
 
-
- // namespace tennis_demo

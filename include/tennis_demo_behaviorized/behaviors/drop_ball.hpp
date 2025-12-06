@@ -14,18 +14,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-// from original pick ball node
-// #include <chrono>
-// #include <cmath>
-// #include <iostream>
-// #include <atomic>
-// #include <geometry_msgs/msg/pose.hpp>
-// #include <moveit_msgs/msg/robot_trajectory.hpp>
-// #include <tf2/LinearMath/Quaternion.h>
 
-
-// namespace tennis_demo
-// {
 
 class DropBall : public BT::StatefulActionNode
 {
@@ -55,10 +44,9 @@ private:
 
 
     // helper functions and main logic from original node
-    bool executePickAndPlace(const geometry_msgs::msg::PoseStamped& ball_pose);
+    bool executePickAndPlace(const geometry_msgs::msg::PoseStamped& bin_nav_pose);
     geometry_msgs::msg::Pose rotatePoseRoll90(const geometry_msgs::msg::Pose &pose_body);
     void moveToPose(const geometry_msgs::msg::Pose &target_pose, const std::string &pose_name);
 
 };
 
-//} // namespace tennis_demo
