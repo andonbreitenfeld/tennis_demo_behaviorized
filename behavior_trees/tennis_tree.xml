@@ -3,14 +3,45 @@
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
 
+      <!-- Initialize Robot & Bin -->
       <SubTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}"/>
 
-      <Repeat num_cycles="-1">
-        <ReactiveFallback name="FetchOrPatrol">
-          <SubTree ID="FetchBall"/>
-          <SubTree ID="Patrol" poseA="{poseA}" poseB="{poseB}"/>
-        </ReactiveFallback>
-      </Repeat>
+      <!-- Ball detection flag -->
+      <Script code="@ball_detected := false"/>
+
+      <Parallel name="MonitorAndAct">
+
+        <!-- Monitor ball topic and update flag -->
+        <Repeat num_cycles="-1">
+          <IfThenElse>
+
+            <GetMessageFromTopic
+                topic="/ball_stable_pose"
+                geometry_msgs::msg::PoseStamped="{ball_pose}"
+                transient_local="false"
+                timeout="1.0"/>
+
+            <Script code="@ball_detected := true"/>
+            <Script code="@ball_detected := false"/>
+
+          </IfThenElse>
+        </Repeat>
+
+        <!-- Act: choose fetch or patrol -->
+        <Repeat num_cycles="-1">
+          <ReactiveFallback name="FetchOrPatrol">
+
+            <Sequence name="FetchIfDetected">
+              <ScriptCondition code="@ball_detected == true"/>
+              <SubTree ID="FetchBall" ball_pose="{ball_pose}" bin_nav_pose="{bin_nav_pose}"/>
+            </Sequence>
+
+            <SubTree ID="Patrol" poseA="{poseA}" poseB="{poseB}"/>
+
+          </ReactiveFallback>
+        </Repeat>
+
+      </Parallel>
 
     </Sequence>
   </BehaviorTree>
@@ -58,14 +89,14 @@
           robot_nav_namespace="spot_nav"
           target_pose="{poseA}"/>
       <Delay delay_msec="5000">
-        <AlwaysSuccess name="WaitAfterA"/>
+        <AlwaysSuccess/>
       </Delay>
 
       <NavigateToPose
           robot_nav_namespace="spot_nav"
           target_pose="{poseB}"/>
       <Delay delay_msec="10000">
-        <AlwaysSuccess name="WaitAfterB"/>
+        <AlwaysSuccess/>
       </Delay>
 
     </Sequence>
@@ -77,25 +108,26 @@
   <BehaviorTree ID="FetchBall">
     <Sequence name="FetchBallSequence">
 
-      <!-- Get stable ball pose -->
-      <GetMessageFromTopic
-          topic="/ball_stable_pose"
-          geometry_msgs::msg::PoseStamped="{ball_pose}"
-          transient_local="false"
-          timeout="3.0"/>
-
-      <!-- Compute Nav2 Goal -->
       <ComputeBallApproachGoal
           nav_frame="spot_nav/map"
           robot_frame="base_link"
-          standoff="1.3"
+          standoff="1.0"
           ball_pose="{ball_pose}"
           ball_nav_pose="{ball_nav_pose}"/>
 
-      <!-- Navigate to ball -->
       <NavigateToPose
           robot_nav_namespace="spot_nav"
           target_pose="{ball_nav_pose}"/>
+      <Delay delay_msec="5000">
+        <AlwaysSuccess/>
+      </Delay>
+
+      <NavigateToPose
+          robot_nav_namespace="spot_nav"
+          target_pose="{bin_nav_pose}"/>
+      <Delay delay_msec="5000">
+        <AlwaysSuccess/>
+      </Delay>
 
     </Sequence>
   </BehaviorTree>

@@ -49,34 +49,44 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   auto nav_frame_res   = getInput<std::string>("nav_frame");
   auto robot_frame_res = getInput<std::string>("robot_frame");
   auto standoff_res    = getInput<double>("standoff");
-  PosePtr ball_pose_ptr;
+  auto ball_pose_res   = getInput<PosePtr>("ball_pose");
 
-  if (!nav_frame_res || !robot_frame_res || !standoff_res ||
-      !getInput<PosePtr>("ball_pose", ball_pose_ptr))
+  // Static configuration ports must be present (these come from XML)
+  if (!nav_frame_res || !robot_frame_res || !standoff_res)
   {
     RCLCPP_WARN(node_->get_logger(),
-                "ComputeBallApproachGoal: missing required input port");
+                "ComputeBallApproachGoal: missing static config port "
+                "(nav_frame / robot_frame / standoff)");
     return BT::NodeStatus::FAILURE;
   }
 
-  if (!ball_pose_ptr) {
-    RCLCPP_WARN(node_->get_logger(),
-                "ComputeBallApproachGoal: ball_pose pointer is null");
+  // Dynamic input: ball_pose may legitimately be missing if no ball is detected yet.
+  // Treat that as a normal FAILURE (no warning) so the tree can fall back to Patrol.
+  if (!ball_pose_res || !ball_pose_res.value())
+  {
     return BT::NodeStatus::FAILURE;
   }
 
   const std::string nav_frame   = nav_frame_res.value();
   const std::string robot_frame = robot_frame_res.value();
   const double standoff         = standoff_res.value();
+  PosePtr ball_pose_ptr         = ball_pose_res.value();
 
+  // Make a value copy so we can transform it
   geometry_msgs::msg::PoseStamped ball_pose = *ball_pose_ptr;
   geometry_msgs::msg::PoseStamped ball_in_nav;
 
-  try {
-    if (ball_pose.header.frame_id.empty() || ball_pose.header.frame_id == nav_frame) {
+  // Ensure ball pose is in nav_frame
+  try
+  {
+    if (ball_pose.header.frame_id.empty() ||
+        ball_pose.header.frame_id == nav_frame)
+    {
       ball_in_nav = ball_pose;
       ball_in_nav.header.frame_id = nav_frame;
-    } else {
+    }
+    else
+    {
       auto tf_ball =
         tf_buffer_->lookupTransform(
           nav_frame,
@@ -86,7 +96,9 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
 
       tf2::doTransform(ball_pose, ball_in_nav, tf_ball);
     }
-  } catch (const tf2::TransformException& ex) {
+  }
+  catch (const tf2::TransformException& ex)
+  {
     RCLCPP_WARN(node_->get_logger(),
                 "ComputeBallApproachGoal: failed to transform ball pose to %s: %s",
                 nav_frame.c_str(), ex.what());
@@ -96,16 +108,20 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double ball_x = ball_in_nav.pose.position.x;
   const double ball_y = ball_in_nav.pose.position.y;
 
+  // Get robot pose in nav_frame
   geometry_msgs::msg::TransformStamped tf_robot;
   rclcpp::Time now = node_->get_clock()->now();
 
-  try {
+  try
+  {
     tf_robot = tf_buffer_->lookupTransform(
       nav_frame,
       robot_frame,
       now,
       rclcpp::Duration::from_seconds(0.2));
-  } catch (const tf2::TransformException& ex) {
+  }
+  catch (const tf2::TransformException& ex)
+  {
     RCLCPP_WARN(node_->get_logger(),
                 "ComputeBallApproachGoal: failed to lookup tf %s -> %s: %s",
                 nav_frame.c_str(), robot_frame.c_str(), ex.what());
@@ -115,11 +131,13 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double robot_x = tf_robot.transform.translation.x;
   const double robot_y = tf_robot.transform.translation.y;
 
+  // Direction from robot -> ball
   const double dx = ball_x - robot_x;
   const double dy = ball_y - robot_y;
   const double dist = std::hypot(dx, dy);
 
-  if (dist < 1e-3) {
+  if (dist < 1e-3)
+  {
     RCLCPP_WARN(node_->get_logger(),
                 "ComputeBallApproachGoal: robot and ball are too close to compute approach");
     return BT::NodeStatus::FAILURE;
@@ -128,12 +146,14 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double ux = dx / dist;
   const double uy = dy / dist;
 
+  // Goal is standoff meters behind the ball along the direction robot->ball
   const double goal_x = ball_x - ux * standoff;
   const double goal_y = ball_y - uy * standoff;
 
+  // Orient robot to face the ball
   const double yaw = std::atan2(uy, ux);
-  const double qz = std::sin(yaw / 2.0);
-  const double qw = std::cos(yaw / 2.0);
+  const double qz  = std::sin(yaw / 2.0);
+  const double qw  = std::cos(yaw / 2.0);
 
   PosePtr goal_ptr = std::make_shared<PoseStamped>();
   goal_ptr->header.stamp = now;
@@ -152,4 +172,4 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
-}
+}  // namespace tennis_demo_behaviorized
