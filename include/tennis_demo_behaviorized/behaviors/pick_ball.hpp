@@ -4,12 +4,16 @@
 #include <optional>
 #include <memory>
 #include <mutex>
-
+#include <future> 
 
 #include <rclcpp/rclcpp.hpp>
 #include <behaviortree_cpp/action_node.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 // from original pick ball node
 // #include <chrono>
@@ -19,11 +23,6 @@
 // #include <geometry_msgs/msg/pose.hpp>
 // #include <moveit_msgs/msg/robot_trajectory.hpp>
 // #include <tf2/LinearMath/Quaternion.h>
-
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 namespace tennis_demo
@@ -53,6 +52,8 @@ private:
     rclcpp::Node::SharedPtr node_;
     rclcpp::executors::MultiThreadedExecutor executor_;
     std::thread spin_thread_;
+    std::future<bool> future_;
+
 
     // helper functions and main logic from original node
     bool executePickAndPlace(const geometry_msgs::msg::PoseStamped& ball_pose);

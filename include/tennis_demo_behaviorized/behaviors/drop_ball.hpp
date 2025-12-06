@@ -4,6 +4,7 @@
 #include <optional>
 #include <memory>
 #include <mutex>
+#include <future> 
 
 #include <rclcpp/rclcpp.hpp>
 #include <behaviortree_cpp/action_node.h>
@@ -50,6 +51,8 @@ private:
     rclcpp::Node::SharedPtr node_;
     rclcpp::executors::MultiThreadedExecutor executor_;
     std::thread spin_thread_;
+    std::future<bool> future_;
+
 
     // helper functions and main logic from original node
     bool executePickAndPlace(const geometry_msgs::msg::PoseStamped& ball_pose);

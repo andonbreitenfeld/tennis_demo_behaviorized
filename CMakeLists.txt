@@ -20,6 +20,7 @@ find_package(spot_behaviors REQUIRED)
 find_package(nrg_utility_behaviors REQUIRED)
 find_package(nrg_navigation_behaviors REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
 
 # Specify include directories
 include_directories(
@@ -32,7 +33,7 @@ add_executable(run_tennis_tree
   src/behaviors/check_bin_detected.cpp
   src/behaviors/check_ball_detected.cpp
   src/behaviors/get_ball_pose.cpp
-  src/behaviors/get_bin_pose.
+  src/behaviors/get_bin_pose.cpp
   src/behaviors/pick_ball.cpp
   src/behaviors/drop_ball.cpp
 )
@@ -48,6 +49,7 @@ ament_target_dependencies(run_tennis_tree
   nrg_utility_behaviors
   nrg_navigation_behaviors
   ament_index_cpp
+  moveit_ros_planning_interface
 )
 
 # Specify header search path

@@ -1,4 +1,5 @@
 #include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
+#include <future>
 
 namespace tennis_demo
 {
@@ -10,7 +11,7 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     
     // MoveIt setup
     moveit::planning_interface::MoveGroupInterface::Options move_group_options(
-        "arm", "robot_description", node_->get_namespace());
+        "arm", "robot_description", "/spot_moveit/robot_description");
     move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(
         node_, move_group_options);
 
@@ -25,8 +26,7 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     // Spin ROS in background
     executor_.add_node(node_);
     spin_thread_ = std::thread([this]() { executor_.spin(); });
-    
-    }
+
 }
 
 PickBall::~PickBall()
@@ -40,10 +40,10 @@ PickBall::~PickBall()
 }
 
 //prev had 'static' before declaring BT::Ports...
-static BT::PortsList providedPorts()
+BT::PortsList PickBall::providedPorts()
     {
         return {
-            BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose")
+            BT::InputPort<geometry_msgs::msg::PoseStamped>("ball_pose")
         };
     }
 
@@ -153,24 +153,25 @@ void PickBall::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     move_group_->setPoseTarget(target_pose);
 
-    RCLCPP_INFO(LOGGER, "Planning to %s pose: x=%.3f y=%.3f z=%.3f",
+    RCLCPP_INFO(node_->get_logger(), "Planning to %s pose: x=%.3f y=%.3f z=%.3f",
                 pose_name.c_str(),
                 target_pose.position.x,
                 target_pose.position.y,
                 target_pose.position.z);
 
     if (move_group_->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS) {
-        RCLCPP_INFO(LOGGER, "Plan successful, executing...");
+        RCLCPP_INFO(node_->get_logger(), "Plan successful, executing...");
         if (move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS) {
-            RCLCPP_INFO(LOGGER, "Successfully moved to %s pose", pose_name.c_str());
+            RCLCPP_INFO(node_->get_logger(), "Successfully moved to %s pose", pose_name.c_str());
             // return true;
         } else {
-            RCLCPP_ERROR(LOGGER, "Execution failed for %s pose", pose_name.c_str());
+            RCLCPP_ERROR(node_->get_logger(), "Execution failed for %s pose", pose_name.c_str());
             // return false;
         }
     } else {
-        RCLCPP_ERROR(LOGGER, "Planning failed for %s pose", pose_name.c_str());
+        RCLCPP_ERROR(node_->get_logger(), "Planning failed for %s pose", pose_name.c_str());
     }
 }
 
+}
  // namespace tennis_demo

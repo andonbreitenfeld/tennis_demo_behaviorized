@@ -12,8 +12,7 @@
 #include "tennis_demo_behaviorized/behaviors/get_ball_pose.hpp"
 #include "tennis_demo_behaviorized/behaviors/get_bin_pose.hpp"
 #include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
-// #include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
-
+#include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
 
 // Utility behaviors
 #include <nrg_utility_behaviors/get_current_pose.hpp>
@@ -70,6 +69,19 @@ int main(int argc, char **argv)
 
     // Set initial values in blackboard
     tree.rootBlackboard()->set<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("survey_pose", survey_pose);
+
+    // hard code test point for manipulation BT testing
+    auto bin_nav_pose = std::make_shared<geometry_msgs::msg::PoseStamped>();
+    bin_nav_pose->header.frame_id = "spot_nav/map";
+    bin_nav_pose->pose.position.x = 1.63907;  // Replace with actual coordinates (2.0)
+    bin_nav_pose->pose.position.y = -0.464794;  // Replace with actual coordinates (-4.0)
+    bin_nav_pose->pose.position.z = 0.8;
+    // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
+    bin_nav_pose->pose.orientation.x = 0.0;
+    bin_nav_pose->pose.orientation.y = 0.0;
+    bin_nav_pose->pose.orientation.z = -0.701875;
+    bin_nav_pose->pose.orientation.w = 0.7123;
+    tree.rootBlackboard()->set<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("bin_nav_pose", bin_nav_pose);
 
     // Tick the tree
     tree.tickWhileRunning();
