@@ -68,7 +68,6 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
   nav_pose->pose.orientation.z = std::sin(yaw * 0.5);
   nav_pose->pose.orientation.w = std::cos(yaw * 0.5);
 
-  // WRITE IT TO THE BLACKBOARD (the thing that was missing)
   setOutput("bin_nav_pose", nav_pose);
 
   RCLCPP_INFO(rclcpp::get_logger("ComputeBinApproachGoal"),

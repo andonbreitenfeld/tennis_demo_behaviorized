@@ -85,16 +85,12 @@
   <BehaviorTree ID="Patrol">
     <Sequence name="PatrolSequence">
 
-      <NavigateToPose
-          robot_nav_namespace="spot_nav"
-          target_pose="{poseA}"/>
+      <SubTree ID="WalkToGoal" goal_pose="{poseA}"/>
       <Delay delay_msec="5000">
         <AlwaysSuccess/>
       </Delay>
 
-      <NavigateToPose
-          robot_nav_namespace="spot_nav"
-          target_pose="{poseB}"/>
+      <SubTree ID="WalkToGoal" goal_pose="{poseB}"/>
       <Delay delay_msec="10000">
         <AlwaysSuccess/>
       </Delay>
@@ -115,19 +111,37 @@
           ball_pose="{ball_pose}"
           ball_nav_pose="{ball_nav_pose}"/>
 
-      <NavigateToPose
-          robot_nav_namespace="spot_nav"
-          target_pose="{ball_nav_pose}"/>
+      <SubTree ID="WalkToGoal" goal_pose="{ball_nav_pose}"/>
       <Delay delay_msec="5000">
         <AlwaysSuccess/>
       </Delay>
 
-      <NavigateToPose
-          robot_nav_namespace="spot_nav"
-          target_pose="{bin_nav_pose}"/>
+      <SubTree ID="WalkToGoal" goal_pose="{bin_nav_pose}"/>
       <Delay delay_msec="5000">
         <AlwaysSuccess/>
       </Delay>
+
+    </Sequence>
+  </BehaviorTree>
+
+
+
+  <!-- Generic WalkToGoal using WalkToPose -->
+  <BehaviorTree ID="WalkToGoal" goal_pose="{goal_pose}">
+    <Sequence name="WalkToGoalSequence">
+
+      <!-- Port variables -->
+      <Script code="retry_count := 3"/>
+      <Script code="trans_err_threshold := 0.5"/>
+      <Script code="rot_err_threshold := 0.05"/>
+
+      <!-- Attempt to go to goal with retries -->
+      <RetryUntilSuccessful num_attempts="{retry_count}">
+        <WalkToPose
+            target_pose="{goal_pose}"
+            trans_err_threshold="{trans_err_threshold}"
+            rot_err_threshold="{rot_err_threshold}"/>
+      </RetryUntilSuccessful>
 
     </Sequence>
   </BehaviorTree>

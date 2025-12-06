@@ -51,19 +51,13 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   auto standoff_res    = getInput<double>("standoff");
   auto ball_pose_res   = getInput<PosePtr>("ball_pose");
 
-  // Static configuration ports must be present (these come from XML)
-  if (!nav_frame_res || !robot_frame_res || !standoff_res)
-  {
-    RCLCPP_WARN(node_->get_logger(),
-                "ComputeBallApproachGoal: missing static config port "
-                "(nav_frame / robot_frame / standoff)");
+  // Static config must exist
+  if (!nav_frame_res || !robot_frame_res || !standoff_res) {
     return BT::NodeStatus::FAILURE;
   }
 
-  // Dynamic input: ball_pose may legitimately be missing if no ball is detected yet.
-  // Treat that as a normal FAILURE (no warning) so the tree can fall back to Patrol.
-  if (!ball_pose_res || !ball_pose_res.value())
-  {
+  // If there is no ball pose yet, just fail quietly
+  if (!ball_pose_res || !ball_pose_res.value()) {
     return BT::NodeStatus::FAILURE;
   }
 
@@ -72,7 +66,7 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double standoff         = standoff_res.value();
   PosePtr ball_pose_ptr         = ball_pose_res.value();
 
-  // Make a value copy so we can transform it
+  // Copy ball pose so we can transform it
   geometry_msgs::msg::PoseStamped ball_pose = *ball_pose_ptr;
   geometry_msgs::msg::PoseStamped ball_in_nav;
 
@@ -97,11 +91,9 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
       tf2::doTransform(ball_pose, ball_in_nav, tf_ball);
     }
   }
-  catch (const tf2::TransformException& ex)
+  catch (const tf2::TransformException&)
   {
-    RCLCPP_WARN(node_->get_logger(),
-                "ComputeBallApproachGoal: failed to transform ball pose to %s: %s",
-                nav_frame.c_str(), ex.what());
+    // Transform not available yet → normal failure
     return BT::NodeStatus::FAILURE;
   }
 
@@ -120,11 +112,9 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
       now,
       rclcpp::Duration::from_seconds(0.2));
   }
-  catch (const tf2::TransformException& ex)
+  catch (const tf2::TransformException&)
   {
-    RCLCPP_WARN(node_->get_logger(),
-                "ComputeBallApproachGoal: failed to lookup tf %s -> %s: %s",
-                nav_frame.c_str(), robot_frame.c_str(), ex.what());
+    // TF not ready → normal failure
     return BT::NodeStatus::FAILURE;
   }
 
@@ -136,17 +126,15 @@ BT::NodeStatus ComputeBallApproachGoal::tick()
   const double dy = ball_y - robot_y;
   const double dist = std::hypot(dx, dy);
 
-  if (dist < 1e-3)
-  {
-    RCLCPP_WARN(node_->get_logger(),
-                "ComputeBallApproachGoal: robot and ball are too close to compute approach");
+  if (dist < 1e-3) {
+    // Degenerate geometry → fail
     return BT::NodeStatus::FAILURE;
   }
 
   const double ux = dx / dist;
   const double uy = dy / dist;
 
-  // Goal is standoff meters behind the ball along the direction robot->ball
+  // Goal is standoff meters behind the ball along robot->ball direction
   const double goal_x = ball_x - ux * standoff;
   const double goal_y = ball_y - uy * standoff;
 
