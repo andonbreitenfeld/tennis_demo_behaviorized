@@ -11,6 +11,7 @@
 
 // Custom behaviors from this package
 #include "tennis_demo_behaviorized/behaviors/compute_bin_approach_goal.hpp"
+#include "tennis_demo_behaviorized/behaviors/compute_ball_approach_goal.hpp"
 #include "tennis_demo_behaviorized/behaviors/lookup_tf.hpp"
 
 // NRG behaviors
@@ -30,6 +31,7 @@ int main(int argc, char** argv)
     // Register custom nodes
     factory.registerNodeType<chair_manipulation::LookupTF>("LookupTF");
     factory.registerNodeType<ComputeBinApproachGoal>("ComputeBinApproachGoal");
+    factory.registerNodeType<tennis_demo_behaviorized::ComputeBallApproachGoal>("ComputeBallApproachGoal");
 
     // TriggerService (claim / power_on / undock)
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");

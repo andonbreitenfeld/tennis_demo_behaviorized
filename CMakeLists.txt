@@ -14,6 +14,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(spot_behaviors REQUIRED)
@@ -32,6 +33,7 @@ add_executable(run_tennis_tree
   src/run_tennis_tree.cpp
   src/behaviors/compute_bin_approach_goal.cpp
   src/behaviors/lookup_tf.cpp
+  src/behaviors/compute_ball_approach_goal.cpp
 )
 
 # Link executable with ament dependencies
@@ -39,6 +41,7 @@ ament_target_dependencies(run_tennis_tree
   rclcpp
   behaviortree_cpp
   tf2_ros
+  tf2_geometry_msgs
   geometry_msgs
   std_msgs
   spot_behaviors

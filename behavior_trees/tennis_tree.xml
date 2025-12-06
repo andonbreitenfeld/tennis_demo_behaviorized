@@ -1,36 +1,25 @@
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
+
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
+
       <SubTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}"/>
 
-      <!-- Patrol between 2 Waypoints -->
       <Repeat num_cycles="-1">
-        <Sequence name="PatrolSequence">
-
-          <NavigateToPose
-              robot_nav_namespace="spot_nav"
-              target_pose="{poseA}"/>
-
-          <NavigateToPose
-              robot_nav_namespace="spot_nav"
-              target_pose="{poseB}"/>
-
-        </Sequence>
+        <Fallback name="FetchOrPatrol">
+          <SubTree ID="FetchBall" ball_pose="{ball_pose}"/>
+          <SubTree ID="Patrol"/>
+        </Fallback>
       </Repeat>
-      
+
     </Sequence>
   </BehaviorTree>
 
 
 
-  <!-- Robot & Bin Initialization -->
-  <BehaviorTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}">
+  <!-- Initialize Robot & Bin -->
+  <BehaviorTree ID="StartupSequence">
     <Sequence name="StartupRootSequence">
-
-      <!-- Parameters -->
-      <Script code="bin_nav_frame:='spot_nav/map'"/>
-      <Script code="bin_tag_frame:='bin_tag_link'"/>
-      <Script code="bin_standoff:=1.3"/>
 
       <!-- Robot Initialization -->
       <Sequence name="RobotBootSequence">
@@ -39,18 +28,18 @@
         <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
       </Sequence>
 
-      <!-- Bin Initialization -->
+      <!-- Find Bin TF & Compute Nav2 Goal -->
       <RetryUntilSuccessful num_attempts="-1">
         <Sequence name="InitializeBin">
 
-          <LookupTF ref_frame="{bin_nav_frame}"
-                    target_frame="{bin_tag_frame}"
+          <LookupTF ref_frame="spot_nav/map"
+                    target_frame="bin_tag_link"
                     pose="{bin_tag_pose}"
                     timeout_secs="1.0"/>
 
           <ComputeBinApproachGoal 
               tag_pose="{bin_tag_pose}"
-              standoff="{bin_standoff}"
+              standoff="1.3"
               bin_nav_pose="{bin_nav_pose}"/>
 
         </Sequence>
@@ -58,5 +47,56 @@
 
     </Sequence>
   </BehaviorTree>
+
+
+
+  <!-- Patrol between Waypoints -->
+  <BehaviorTree ID="Patrol">
+    <Sequence name="PatrolSequence">
+
+      <NavigateToPose
+          robot_nav_namespace="spot_nav"
+          target_pose="{poseA}"/>
+
+      <NavigateToPose
+          robot_nav_namespace="spot_nav"
+          target_pose="{poseB}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
+
+
+  <!-- Fetch Ball -->
+  <BehaviorTree ID="FetchBall">
+    <SubTreePorts>
+      <Port name="ball_pose" direction="output"/>
+    </SubTreePorts>
+
+    <Sequence name="FetchBallSequence">
+
+      <!-- Get stable ball pose -->
+      <GetMessageFromTopic
+          topic="/ball_stable_pose"
+          geometry_msgs::msg::PoseStamped="{ball_pose}"
+          transient_local="false"
+          timeout="0.5"/>
+
+      <!-- Compute Nav2 Goal -->
+      <ComputeBallApproachGoal
+          nav_frame="spot_nav/map"
+          robot_frame="base_link"
+          standoff="1.3"
+          ball_pose="{ball_pose}"
+          ball_nav_pose="{ball_nav_pose}"/>
+
+      <!-- Navigate to ball -->
+      <NavigateToPose
+          robot_nav_namespace="spot_nav"
+          target_pose="{ball_nav_pose}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
 
 </root>
