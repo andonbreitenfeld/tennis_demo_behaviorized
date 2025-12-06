@@ -20,6 +20,7 @@
 // NRG behaviors
 #include <nrg_utility_behaviors/trigger_service.hpp>
 #include <nrg_utility_behaviors/get_message_from_topic.hpp>
+#include <nrg_navigation_behaviors/navigate_to_pose.hpp>
 
 // Spot behaviors
 #include <spot_behaviors/walk_to_pose.hpp>
@@ -45,7 +46,10 @@ int main(int argc, char** argv)
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
     factory.registerNodeType<nrg_utility_behaviors::GetMessageFromTopic>("GetMessageFromTopic");
 
-    // WalkToPose from spot_behaviors
+    // Nav2 NavigateToPose (used only for bin cleanup)
+    factory.registerNodeType<nrg_navigation_behaviors::NavigateToPose>("NavigateToPose");
+
+    // WalkToPose from spot_behaviors (used in WalkToGoal)
     factory.registerBuilder<spot_behaviors::WalkToPose>(
       "WalkToPose",
       [tf_buffer](const std::string& name, const BT::NodeConfig& config)
@@ -66,9 +70,9 @@ int main(int argc, char** argv)
     std::cout << "Loading waypoints from: " << yaml_path << std::endl;
 
     YAML::Node config = YAML::LoadFile(yaml_path);
-    if (!config["waypoints"] || config["waypoints"].size() < 2)
+    if (!config["waypoints"] || config["waypoints"].size() < 3)
     {
-      throw std::runtime_error("waypoints.yaml must contain at least 2 waypoints");
+      throw std::runtime_error("waypoints.yaml must contain at least 3 waypoints");
     }
 
     auto make_pose_from_yaml = [](const YAML::Node& wp)
@@ -92,14 +96,17 @@ int main(int argc, char** argv)
 
     const auto& wp0 = config["waypoints"][0];
     const auto& wp1 = config["waypoints"][1];
+    const auto& wp2 = config["waypoints"][2];
 
     auto poseA = make_pose_from_yaml(wp0);
     auto poseB = make_pose_from_yaml(wp1);
+    auto poseC = make_pose_from_yaml(wp2);
 
     // Put them on the root blackboard
     auto bb = tree.rootBlackboard();
     bb->set("poseA", poseA);
     bb->set("poseB", poseB);
+    bb->set("poseC", poseC);
 
     // Run the tree
     tree.tickWhileRunning();

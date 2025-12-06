@@ -4,7 +4,7 @@
     <Sequence name="RootSequence">
 
       <!-- Initialize Robot & Bin -->
-      <SubTree ID="StartupSequence" bin_nav_pose="{bin_nav_pose}"/>
+      <SubTree ID="StartupSequence" poseA="{poseA}" bin_nav_pose="{bin_nav_pose}"/>
 
       <!-- Ball detection flag -->
       <Script code="@ball_detected := false"/>
@@ -36,7 +36,7 @@
               <SubTree ID="FetchBall" ball_pose="{ball_pose}" bin_nav_pose="{bin_nav_pose}"/>
             </Sequence>
 
-            <SubTree ID="Patrol" poseA="{poseA}" poseB="{poseB}"/>
+            <SubTree ID="Patrol" poseB="{poseB}" poseC="{poseC}"/>
 
           </ReactiveFallback>
         </Repeat>
@@ -57,7 +57,20 @@
         <TriggerService service_name="/spot_driver/claim"    timeout="5.0"/>
         <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
         <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
+        <TriggerService service_name="/spot_manipulation_driver/open_gripper"   timeout="10.0"/>
       </Sequence>
+
+      <Delay delay_msec="2000">
+        <AlwaysSuccess/>
+      </Delay>
+
+      <RetryUntilSuccessful num_attempts="-1">
+        <SubTree ID="WalkToGoal" goal_pose="{poseA}"/>
+      </RetryUntilSuccessful>
+
+      <Delay delay_msec="2000">
+        <AlwaysSuccess/>
+      </Delay>
 
       <!-- Find Bin TF & Compute Nav2 Goal -->
       <RetryUntilSuccessful num_attempts="-1">
@@ -70,7 +83,7 @@
 
           <ComputeBinApproachGoal 
               tag_pose="{bin_tag_pose}"
-              standoff="1.3"
+              standoff="1.2"
               bin_nav_pose="{bin_nav_pose}"/>
 
         </Sequence>
@@ -84,13 +97,14 @@
   <!-- Patrol between Waypoints -->
   <BehaviorTree ID="Patrol">
     <Sequence name="PatrolSequence">
-
-      <SubTree ID="WalkToGoal" goal_pose="{poseA}"/>
+      
+      
+      <SubTree ID="WalkToGoal" goal_pose="{poseB}"/>
       <Delay delay_msec="5000">
         <AlwaysSuccess/>
       </Delay>
 
-      <SubTree ID="WalkToGoal" goal_pose="{poseB}"/>
+      <SubTree ID="WalkToGoal" goal_pose="{poseC}"/>
       <Delay delay_msec="10000">
         <AlwaysSuccess/>
       </Delay>
@@ -101,22 +115,27 @@
 
 
   <!-- Fetch Ball -->
-  <BehaviorTree ID="FetchBall">
+  <BehaviorTree ID="FetchBall" bin_nav_pose="{bin_nav_pose}" ball_nav_pose="{ball_nav_pose}">
     <Sequence name="FetchBallSequence">
 
       <ComputeBallApproachGoal
           nav_frame="spot_nav/map"
           robot_frame="base_link"
-          standoff="1.0"
+          standoff="1.3"
           ball_pose="{ball_pose}"
           ball_nav_pose="{ball_nav_pose}"/>
 
+      <!-- Walk to ball -->
       <SubTree ID="WalkToGoal" goal_pose="{ball_nav_pose}"/>
-      <Delay delay_msec="5000">
+      <Delay delay_msec="1000">
         <AlwaysSuccess/>
       </Delay>
 
-      <SubTree ID="WalkToGoal" goal_pose="{bin_nav_pose}"/>
+      <!-- Nav2 to bin -->
+        <NavigateToPose
+            robot_nav_namespace="spot_nav"
+            target_pose="{bin_nav_pose}"/>
+
       <Delay delay_msec="5000">
         <AlwaysSuccess/>
       </Delay>
@@ -133,7 +152,7 @@
       <!-- Port variables -->
       <Script code="retry_count := 3"/>
       <Script code="trans_err_threshold := 0.5"/>
-      <Script code="rot_err_threshold := 0.05"/>
+      <Script code="rot_err_threshold := 0.1"/>
 
       <!-- Attempt to go to goal with retries -->
       <RetryUntilSuccessful num_attempts="{retry_count}">
