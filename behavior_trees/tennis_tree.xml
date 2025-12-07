@@ -3,15 +3,11 @@
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
 
-      <!-- Initialize Robot & Bin -->
       <SubTree ID="StartupSequence" poseA="{poseA}" bin_nav_pose="{bin_nav_pose}"/>
 
-      <!-- Ball detection flag -->
       <Script code="@ball_detected := false"/>
 
       <Parallel name="MonitorAndAct">
-
-        <!-- Monitor ball topic and update flag -->
         <Repeat num_cycles="-1">
           <IfThenElse>
 
@@ -27,7 +23,7 @@
           </IfThenElse>
         </Repeat>
 
-        <!-- Act: choose fetch or patrol -->
+        <!-- Choose fetch or patrol -->
         <Repeat num_cycles="-1">
           <ReactiveFallback name="FetchOrPatrol">
 
@@ -54,23 +50,18 @@
 
       <!-- Robot Initialization -->
       <Sequence name="RobotBootSequence">
-        <TriggerService service_name="/spot_driver/claim"    timeout="5.0"/>
+        <TriggerService service_name="/spot_driver/claim"    timeout="10.0"/>
         <TriggerService service_name="/spot_driver/power_on" timeout="10.0"/>
         <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
         <TriggerService service_name="/spot_manipulation_driver/open_gripper"   timeout="10.0"/>
       </Sequence>
 
+      <!-- Help Apriltag Localization -->
       <Delay delay_msec="2000">
         <AlwaysSuccess/>
       </Delay>
 
-      <RetryUntilSuccessful num_attempts="-1">
-        <SubTree ID="WalkToGoal" goal_pose="{poseA}"/>
-      </RetryUntilSuccessful>
-
-      <Delay delay_msec="2000">
-        <AlwaysSuccess/>
-      </Delay>
+      <SubTree ID="WalkToGoal" goal_pose="{poseA}"/>
 
       <!-- Find Bin TF & Compute Nav2 Goal -->
       <RetryUntilSuccessful num_attempts="-1">
@@ -83,7 +74,7 @@
 
           <ComputeBinApproachGoal 
               tag_pose="{bin_tag_pose}"
-              standoff="1.2"
+              standoff="1.3"
               bin_nav_pose="{bin_nav_pose}"/>
 
         </Sequence>
@@ -98,16 +89,11 @@
   <BehaviorTree ID="Patrol">
     <Sequence name="PatrolSequence">
       
-      
       <SubTree ID="WalkToGoal" goal_pose="{poseB}"/>
-      <Delay delay_msec="5000">
-        <AlwaysSuccess/>
-      </Delay>
+      <SubTree ID="Spin"/>
 
       <SubTree ID="WalkToGoal" goal_pose="{poseC}"/>
-      <Delay delay_msec="10000">
-        <AlwaysSuccess/>
-      </Delay>
+      <SubTree ID="Spin"/>
 
     </Sequence>
   </BehaviorTree>
@@ -115,7 +101,8 @@
 
 
   <!-- Fetch Ball -->
-  <BehaviorTree ID="FetchBall" bin_nav_pose="{bin_nav_pose}" ball_nav_pose="{ball_nav_pose}">
+  <!-- NOTE: ball_nav_pose port removed here; it's internal to this tree -->
+  <BehaviorTree ID="FetchBall" bin_nav_pose="{bin_nav_pose}">
     <Sequence name="FetchBallSequence">
 
       <ComputeBallApproachGoal
@@ -127,15 +114,20 @@
 
       <!-- Walk to ball -->
       <SubTree ID="WalkToGoal" goal_pose="{ball_nav_pose}"/>
+
+      <!-- PLACEHOLDER: Insert grasp here -->
       <Delay delay_msec="1000">
         <AlwaysSuccess/>
       </Delay>
 
       <!-- Nav2 to bin -->
+      <RetryUntilSuccessful num_attempts="-1">
         <NavigateToPose
             robot_nav_namespace="spot_nav"
             target_pose="{bin_nav_pose}"/>
+      </RetryUntilSuccessful>
 
+      <!-- PLACEHOLDER: Insert drop here -->
       <Delay delay_msec="5000">
         <AlwaysSuccess/>
       </Delay>
@@ -145,14 +137,50 @@
 
 
 
-  <!-- Generic WalkToGoal using WalkToPose -->
+  <!-- Spin in Place -->
+  <BehaviorTree ID="Spin">
+    <Sequence name="SpinSequence">
+
+      <GetCurrentPose
+          reference_frame="spot_nav/map"
+          target_frame="base_footprint"
+          static="false"
+          pose="{spin_pose}"/>
+      
+      <Delay delay_msec="5000">
+        <AlwaysSuccess/>
+      </Delay>
+
+      <Repeat num_cycles="3">
+        <Sequence name="SpinStep">
+
+          <RotatePoseYaw
+              in_pose="{spin_pose}"
+              delta_deg="90.0"
+              out_pose="{spin_pose}"/>
+
+          <SubTree ID="WalkToGoal" goal_pose="{spin_pose}"/>
+
+          <Delay delay_msec="5000">
+            <AlwaysSuccess/>
+          </Delay>
+
+        </Sequence>
+      </Repeat>
+
+    </Sequence>
+  </BehaviorTree>
+
+
+
+  <!-- Wrapper for WalkToPose -->
   <BehaviorTree ID="WalkToGoal" goal_pose="{goal_pose}">
     <Sequence name="WalkToGoalSequence">
 
       <!-- Port variables -->
-      <Script code="retry_count := 3"/>
-      <Script code="trans_err_threshold := 0.5"/>
-      <Script code="rot_err_threshold := 0.1"/>
+      <Script code="retry_count := -1"/>
+      <Script code="trans_err_threshold := 0.6"/>
+      <Script code="rot_err_threshold := 0.07"/>
 
       <!-- Attempt to go to goal with retries -->
       <RetryUntilSuccessful num_attempts="{retry_count}">

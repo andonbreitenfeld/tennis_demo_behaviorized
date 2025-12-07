@@ -2,6 +2,9 @@
 #include <rclcpp/rclcpp.hpp>
 #include <cmath>
 
+namespace tennis_demo_behaviorized
+{
+
 ComputeBinApproachGoal::ComputeBinApproachGoal(
     const std::string& name,
     const BT::NodeConfig& config)
@@ -35,7 +38,7 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
     return BT::NodeStatus::FAILURE;
   }
 
-  double standoff = 1.3;
+  double standoff = 2.0;
   getInput<double>("standoff", standoff);
 
   auto tag = tag_pose_ptr->pose;
@@ -74,4 +77,6 @@ BT::NodeStatus ComputeBinApproachGoal::tick()
     "bin_nav_pose successfully written to blackboard!");
 
   return BT::NodeStatus::SUCCESS;
+}
+
 }

@@ -13,6 +13,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -34,6 +35,7 @@ add_executable(run_tennis_tree
   src/behaviors/compute_bin_approach_goal.cpp
   src/behaviors/lookup_tf.cpp
   src/behaviors/compute_ball_approach_goal.cpp
+  src/behaviors/rotate_pose_yaw.cpp
 )
 
 # Link executable with ament dependencies

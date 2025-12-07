@@ -4,6 +4,8 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <memory>
 
+namespace tennis_demo_behaviorized
+{
 class ComputeBinApproachGoal : public BT::SyncActionNode
 {
 public:
@@ -16,3 +18,5 @@ public:
   static BT::PortsList providedPorts();
   BT::NodeStatus tick() override;
 };
+
+}

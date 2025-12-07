@@ -16,10 +16,12 @@
 #include "tennis_demo_behaviorized/behaviors/compute_bin_approach_goal.hpp"
 #include "tennis_demo_behaviorized/behaviors/compute_ball_approach_goal.hpp"
 #include "tennis_demo_behaviorized/behaviors/lookup_tf.hpp"
+#include "tennis_demo_behaviorized/behaviors/rotate_pose_yaw.hpp"
 
 // NRG behaviors
 #include <nrg_utility_behaviors/trigger_service.hpp>
 #include <nrg_utility_behaviors/get_message_from_topic.hpp>
+#include <nrg_utility_behaviors/get_current_pose.hpp>
 #include <nrg_navigation_behaviors/navigate_to_pose.hpp>
 
 // Spot behaviors
@@ -31,25 +33,56 @@ int main(int argc, char** argv)
 
   try
   {
-    // Shared TF buffer for WalkToPose
+    // Shared TF buffer for behaviors that need TF
     auto tf_buffer   = std::make_shared<tf2_ros::Buffer>(rclcpp::Clock::make_shared());
     auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
     BT::BehaviorTreeFactory factory;
 
-    // Custom nodes from this package
-    factory.registerNodeType<chair_manipulation::LookupTF>("LookupTF");
-    factory.registerNodeType<ComputeBinApproachGoal>("ComputeBinApproachGoal");
-    factory.registerNodeType<tennis_demo_behaviorized::ComputeBallApproachGoal>("ComputeBallApproachGoal");
+    // --------------------------------------------------------------------------
+    // Register custom nodes from this package
+    // --------------------------------------------------------------------------
 
-    // NRG utility behaviors
-    factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
-    factory.registerNodeType<nrg_utility_behaviors::GetMessageFromTopic>("GetMessageFromTopic");
+    factory.registerNodeType<chair_manipulation::LookupTF>("LookupTF");
+
+    factory.registerNodeType<tennis_demo_behaviorized::ComputeBinApproachGoal>(
+        "ComputeBinApproachGoal");
+
+    factory.registerNodeType<tennis_demo_behaviorized::ComputeBallApproachGoal>(
+        "ComputeBallApproachGoal");
+
+    // RotatePoseYaw helper (yaw-only quaternion math on PoseStamped::SharedPtr)
+    factory.registerNodeType<tennis_demo_behaviorized::RotatePoseYaw>(
+        "RotatePoseYaw");
+
+    // --------------------------------------------------------------------------
+    // NRG utility / navigation behaviors
+    // --------------------------------------------------------------------------
+
+    factory.registerNodeType<nrg_utility_behaviors::TriggerService>(
+        "TriggerService");
+
+    factory.registerNodeType<nrg_utility_behaviors::GetMessageFromTopic>(
+        "GetMessageFromTopic");
+
+    // GetCurrentPose using shared tf_buffer
+    factory.registerBuilder<nrg_utility_behaviors::GetCurrentPose>(
+      "GetCurrentPose",
+      [tf_buffer](const std::string& name, const BT::NodeConfig& config)
+      {
+        // ctor: (name, config, node_ptr, sub_namespace, tf_buffer)
+        return std::make_unique<nrg_utility_behaviors::GetCurrentPose>(
+          name, config, std::weak_ptr<rclcpp::Node>{}, "", tf_buffer);
+      });
 
     // Nav2 NavigateToPose (used only for bin cleanup)
-    factory.registerNodeType<nrg_navigation_behaviors::NavigateToPose>("NavigateToPose");
+    factory.registerNodeType<nrg_navigation_behaviors::NavigateToPose>(
+        "NavigateToPose");
 
-    // WalkToPose from spot_behaviors (used in WalkToGoal)
+    // --------------------------------------------------------------------------
+    // Spot WalkToPose behavior (used in WalkToGoal subtree)
+    // --------------------------------------------------------------------------
+
     factory.registerBuilder<spot_behaviors::WalkToPose>(
       "WalkToPose",
       [tf_buffer](const std::string& name, const BT::NodeConfig& config)
@@ -57,7 +90,10 @@ int main(int argc, char** argv)
         return std::make_unique<spot_behaviors::WalkToPose>(name, config, tf_buffer);
       });
 
-    // Locate BT XML
+    // --------------------------------------------------------------------------
+    // Load BT XML
+    // --------------------------------------------------------------------------
+
     const std::string share_dir =
         ament_index_cpp::get_package_share_directory("tennis_demo_behaviorized");
     const std::string xml_path = share_dir + "/behavior_trees/tennis_tree.xml";
@@ -65,7 +101,10 @@ int main(int argc, char** argv)
     std::cout << "Loading BehaviorTree from: " << xml_path << std::endl;
     auto tree = factory.createTreeFromFile(xml_path);
 
-    // Load waypoints from YAML
+    // --------------------------------------------------------------------------
+    // Load waypoints from YAML and put on blackboard
+    // --------------------------------------------------------------------------
+
     const std::string yaml_path = share_dir + "/config/waypoints.yaml";
     std::cout << "Loading waypoints from: " << yaml_path << std::endl;
 
@@ -108,7 +147,10 @@ int main(int argc, char** argv)
     bb->set("poseB", poseB);
     bb->set("poseC", poseC);
 
+    // --------------------------------------------------------------------------
     // Run the tree
+    // --------------------------------------------------------------------------
+
     tree.tickWhileRunning();
   }
   catch (const std::exception& e)
