@@ -33,8 +33,13 @@ int main(int argc, char** argv)
 
   try
   {
+    // ------------------------------------------------------------------------
+    // Create a shared ROS 2 node for BT actions / TF, logging, etc.
+    // ------------------------------------------------------------------------
+    auto node = rclcpp::Node::make_shared("tennis_demo_behaviorized_bt");
+
     // Shared TF buffer for behaviors that need TF
-    auto tf_buffer   = std::make_shared<tf2_ros::Buffer>(rclcpp::Clock::make_shared());
+    auto tf_buffer   = std::make_shared<tf2_ros::Buffer>(node->get_clock());
     auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
     BT::BehaviorTreeFactory factory;
@@ -45,9 +50,16 @@ int main(int argc, char** argv)
 
     factory.registerNodeType<chair_manipulation::LookupTF>("LookupTF");
 
-    factory.registerNodeType<tennis_demo_behaviorized::ComputeBinApproachGoal>(
-        "ComputeBinApproachGoal");
+    // UPDATED: use registerBuilder so we can pass the node into the constructor
+    factory.registerBuilder<tennis_demo_behaviorized::ComputeBinApproachGoal>(
+      "ComputeBinApproachGoal",
+      [node](const std::string& name, const BT::NodeConfig& config)
+      {
+        return std::make_unique<tennis_demo_behaviorized::ComputeBinApproachGoal>(
+          name, config, node);
+      });
 
+    // ComputeBallApproachGoal still uses the old ctor, so keep as-is
     factory.registerNodeType<tennis_demo_behaviorized::ComputeBallApproachGoal>(
         "ComputeBallApproachGoal");
 
