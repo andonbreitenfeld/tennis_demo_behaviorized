@@ -56,16 +56,19 @@
         <TriggerService service_name="/spot_manipulation_driver/open_gripper" timeout="10.0"/>
       </Sequence>
 
+      <!-- Walk to initial goal pose -->
       <SubTree ID="WalkToGoal"
-               goal_pose="{poseA}"
-               trans_err_threshold="0.75"
-               rot_err_threshold="0.2"/>
+              goal_pose="{poseA}"
+              trans_err_threshold="0.4"
+              rot_err_threshold="0.1"/>
 
-      <!-- Spin then update Bin -->
+      <!-- Find bin until we succeed -->
       <RetryUntilSuccessful num_attempts="-1">
-        <Sequence name="SpinThenFindBin">
+        <Sequence name="FindBin">
 
-          <SubTree ID="Spin" delay_msec="1500"/>
+          <Delay delay_msec="15000">
+            <AlwaysSuccess/>
+          </Delay>
 
           <LookupTF
               ref_frame="spot_nav/map"
@@ -75,7 +78,7 @@
 
           <ComputeBinApproachGoal
               tag_pose="{bin_tag_pose}"
-              standoff="1.7"
+              standoff="1.6"
               bin_nav_pose="{bin_nav_pose}"
               bin_frame_id="bin_nav_goal"/>
 
@@ -95,13 +98,13 @@
                goal_pose="{poseB}"
                trans_err_threshold="0.75"
                rot_err_threshold="0.3"/>
-      <SubTree ID="Spin" delay_msec="5000"/>
+      <SubTree ID="Spin" delay_msec="7000"/>
 
       <SubTree ID="WalkToGoal"
                goal_pose="{poseC}"
                trans_err_threshold="0.75"
                rot_err_threshold="0.3"/>
-      <SubTree ID="Spin" delay_msec="5000"/>
+      <SubTree ID="Spin" delay_msec="7000"/>
 
     </Sequence>
   </BehaviorTree>
@@ -123,7 +126,7 @@
       <SubTree ID="WalkToGoal"
                goal_pose="{ball_nav_pose}"
                trans_err_threshold="0.05"
-               rot_err_threshold="0.02"/>
+               rot_err_threshold="0.05"/>
 
       <!-- PLACEHOLDER: Insert grasp here -->
       <Delay delay_msec="1000">
@@ -134,7 +137,7 @@
       <SubTree ID="WalkToGoal"
                goal_pose="{bin_nav_pose}"
                trans_err_threshold="0.05"
-               rot_err_threshold="0.02"/>
+               rot_err_threshold="0.05"/>
 
       <!-- PLACEHOLDER: Insert drop here -->
       <Delay delay_msec="5000">
@@ -171,7 +174,7 @@
           <SubTree ID="WalkToGoal"
                    goal_pose="{spin_pose}"
                    trans_err_threshold="0.75"
-                   rot_err_threshold="0.2"/>
+                   rot_err_threshold="0.5"/>
 
           <Delay delay_msec="{delay_msec}">
             <AlwaysSuccess/>
