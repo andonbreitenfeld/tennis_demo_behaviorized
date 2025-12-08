@@ -51,7 +51,7 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
 
     // MoveIt setup
     moveit::planning_interface::MoveGroupInterface::Options move_group_options(
-        "arm", "robot_description", "/spot_moveit/robot_description");
+        "arm", "robot_description", "/spot_moveit");
     move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(
         node_, move_group_options);
 

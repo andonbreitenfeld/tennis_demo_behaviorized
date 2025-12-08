@@ -2,8 +2,8 @@
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
       <SubTree ID="StartupSequence"/>
-      <SubTree ID="PickBallSubtree" ball_pose="{ball_pose}"/>
       <SubTree ID="DropBallSubtree" bin_nav_pose="{bin_nav_pose}"/>
+      <SubTree ID="PickBallSubtree" ball_pose="{ball_pose}"/>
       <!-- <NavigateToPose
           target_pose="{bin_nav_pose}"
           robot_nav_namespace="{nav_namespace}"/> -->
@@ -13,12 +13,6 @@
   <BehaviorTree ID="StartupSequence">
     <Sequence name="StartupRootSequence">
 
-      <!-- Parameters -->
-      <!-- <Script code="nav_namespace:='spot_nav'"/>
-      <Script code="bin_nav_frame:='spot_nav/map'"/>
-      <Script code="bin_tag_frame:='bin_tag_link'"/> -->
-      <!-- <Script code="bin_standoff:=1.2"/> -->
-
       <!-- Robot Initialization -->
       <Sequence name="RobotBootSequence">
         <TriggerService service_name="/spot_driver/claim"   timeout="5.0"/>
@@ -26,24 +20,6 @@
         <TriggerService service_name="/spot_driver/undock"   timeout="10.0"/>
       </Sequence>
 
-      <!-- Bin Initialization -->
-      <!-- <RetryUntilSuccessful num_attempts="-1">
-        <Sequence name="InitializeBin"> -->
-
-          <!-- Transform bin tag into map frame -->
-          <!-- <LookupTF ref_frame="{bin_nav_frame}"
-                    target_frame="{bin_tag_frame}"
-                    pose="{bin_tag_pose}"
-                    timeout_secs="1.0"/> -->
-
-          <!-- Compute approach goal from tag pose -->
-          <!-- <ComputeBinApproachGoal 
-              tag_pose="{bin_tag_pose}"
-              standoff="{bin_standoff}"
-              bin_nav_pose="{bin_nav_pose}"/> -->
-
-        <!-- </Sequence> -->
-      <!-- </RetryUntilSuccessful> -->
 
     </Sequence>
   </BehaviorTree>
@@ -71,8 +47,6 @@
 
 			<!-- Stow arm after grabbing ball-->
 			<TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
-			<!-- <GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
-			<BooleanCondition value="{is_stowed}"/> -->
 		
 		</Sequence>
 	</BehaviorTree>
@@ -99,8 +73,6 @@
 
 			<!-- Stow arm after dropping -->
 			<TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
-			<!-- <GetStowState is_stowed="{is_stowed}" timeout_secs='3.0'/>
-			<BooleanCondition value="{is_stowed}"/> -->
 		
 		</Sequence>
 	</BehaviorTree>
