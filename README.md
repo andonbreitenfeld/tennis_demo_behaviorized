@@ -15,6 +15,8 @@ This package implements the **navigation and manipulation logic** for the "Go Fe
 - **FetchBall**: Computes ball approach goal, navigates to ball, executes grasp, returns to bin and drops ball
 - **Patrol**: Cycles between waypoints while scanning for balls
 - **Spin**: Performs 360 degree rotation for environmental scanning
+- **PickBall**: 
+- **DropBall**:
 
 ### Custom Behavior Nodes
 
@@ -29,6 +31,12 @@ Applies a yaw rotation (in degrees) to a pose while preserving position and roll
 
 #### `LookupTF`
 Queries a TF transform and outputs it as a `PoseStamped` (edited version adapted from chair_manipulation package in UTNuclearRobotics)
+
+#### `PickBall`
+Uses the ball target coordinates as a reference and first approaches the ball at an offset waypoint, then moves in closer to the ball horizontally prior to closing the gripper.
+
+#### `DropBall`
+Uses the bin navigation goal to set a target pose offset in front of Spot to turn the gripper and drop the ball.
 
 ## Dependencies
 
