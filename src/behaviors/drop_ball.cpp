@@ -88,7 +88,12 @@ BT::NodeStatus DropBall::onStart()
                 bin_nav_pose.pose.position.x,
                 bin_nav_pose.pose.position.y,
                 bin_nav_pose.pose.position.z);
-
+    
+    bin_nav_pose.pose.position.z = 0.7;
+    RCLCPP_INFO(node_->get_logger(), "Bin pose with z-offset: x=%.3f y=%.3f z=%.3f",
+            bin_nav_pose.pose.position.x,
+            bin_nav_pose.pose.position.y,
+            bin_nav_pose.pose.position.z);
 
 
     // Launch async task
@@ -143,11 +148,12 @@ bool DropBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
 
     // Approach pose
     geometry_msgs::msg::Pose drop_pose = transformed.pose;
-    // drop_pose.position.x += 0.6; // values found through trial and error, Spot consistently navigates to left side of tag
+    drop_pose.position.x += 1.2; // values found through trial and error, Spot consistently navigates to left side of tag
     // drop_pose.position.y -= 0.2;
     RCLCPP_INFO(node_->get_logger(),
         "Planning frame: %s",
         move_group_->getPlanningFrame().c_str());
+
 
     moveToPose(drop_pose, "drop");
     rclcpp::sleep_for(std::chrono::seconds(3));

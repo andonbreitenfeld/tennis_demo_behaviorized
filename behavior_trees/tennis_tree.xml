@@ -78,7 +78,7 @@
 
           <ComputeBinApproachGoal
               tag_pose="{bin_tag_pose}"
-              standoff="1.2"
+              standoff="1.3"
               bin_nav_pose="{bin_nav_pose}"
               bin_frame_id="bin_nav_goal"/>
 
@@ -118,7 +118,7 @@
       <ComputeBallApproachGoal
           nav_frame="spot_nav/map"
           robot_frame="base_link"
-          standoff="1.2"
+          standoff="1.1"
           ball_pose="{ball_pose}"
           ball_nav_pose="{ball_nav_pose}"/>
 
@@ -128,15 +128,20 @@
                trans_err_threshold="0.05"
                rot_err_threshold="0.05"/>
 
+
       <!-- Pick up ball -->
       <SubTree ID="PickBallSubtree" ball_pose="{ball_pose}"/>
+
+      <Delay delay_msec="5000">
+        <AlwaysSuccess/>
+      </Delay>
 
       <!-- Navigate to bin -->
       <SubTree ID="WalkToGoal"
                goal_pose="{bin_nav_pose}"
                trans_err_threshold="0.05"
                rot_err_threshold="0.05"/>
-
+      
       <!-- Drop ball in bin -->
       <SubTree ID="DropBallSubtree" bin_nav_pose="{bin_nav_pose}"/>
 
@@ -159,6 +164,9 @@
 
       <!-- Custom MoveIt node (move to ball and rotate arm) -->
       <PickBall ball_pose="{ball_pose}"/>
+      <Delay delay_msec="1000">
+        <AlwaysSuccess/>
+      </Delay>
 
       <!-- Close the gripper, grabbing ball -->
       <TriggerService service_name="/spot_manipulation_driver/close_gripper" timeout="{service_timeout}"/>
@@ -187,7 +195,7 @@
       <TriggerService service_name="/spot_manipulation_driver/open_gripper" timeout="{service_timeout}"/>
 
       <!-- Close the gripper after dropping -->
-      <TriggerService service_name="/spot_manipulation_driver/close_gripper" timeout="{service_timeout}"/>
+      <!-- <TriggerService service_name="/spot_manipulation_driver/close_gripper" timeout="{service_timeout}"/> -->
 
       <!-- Stow arm after dropping -->
       <TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>

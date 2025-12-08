@@ -142,7 +142,7 @@ bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
     // Approach pose
     geometry_msgs::msg::Pose approach = transformed.pose;
     approach.position.x -= 0.05;
-    approach.position.y += 0.03;
+    approach.position.y -= 0.01;
 
     RCLCPP_INFO(node_->get_logger(),
         "Planning frame: %s",
@@ -153,8 +153,8 @@ bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
 
     // Grasp pose with offsets
     geometry_msgs::msg::Pose grasp = transformed.pose;
-    grasp.position.x += 0.03;
-    grasp.position.y += 0.03;
+    grasp.position.x += 0.06;
+    grasp.position.y -= 0.01;
 
     moveToPose(grasp, "grasp");
 
