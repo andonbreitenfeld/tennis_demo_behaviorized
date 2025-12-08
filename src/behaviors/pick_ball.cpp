@@ -144,6 +144,10 @@ bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
     approach.position.x -= 0.05;
     approach.position.y += 0.03;
 
+    RCLCPP_INFO(node_->get_logger(),
+        "Planning frame: %s",
+        move_group_->getPlanningFrame().c_str());
+
     moveToPose(approach, "approach");
     rclcpp::sleep_for(std::chrono::seconds(3));
 

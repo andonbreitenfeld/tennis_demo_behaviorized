@@ -30,10 +30,6 @@ include_directories(
 # Build the executable
 add_executable(run_tennis_tree 
   src/run_tennis_tree.cpp
-  src/behaviors/check_bin_detected.cpp
-  src/behaviors/check_ball_detected.cpp
-  src/behaviors/get_ball_pose.cpp
-  src/behaviors/get_bin_pose.cpp
   src/behaviors/pick_ball.cpp
   src/behaviors/drop_ball.cpp
   # src/behaviors/angle_gripper.cpp

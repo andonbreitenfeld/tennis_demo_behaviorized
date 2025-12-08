@@ -7,10 +7,6 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
 // Custom nodes
-#include "tennis_demo_behaviorized/behaviors/check_bin_detected.hpp"
-#include "tennis_demo_behaviorized/behaviors/check_ball_detected.hpp"
-#include "tennis_demo_behaviorized/behaviors/get_ball_pose.hpp"
-#include "tennis_demo_behaviorized/behaviors/get_bin_pose.hpp"
 #include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
 #include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
 #include "tennis_demo_behaviorized/behaviors/angle_gripper.hpp"
@@ -39,26 +35,6 @@ int main(int argc, char **argv)
     auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
     // Register custom nodes
-    factory.registerNodeType<tennis_demo::CheckBinDetected>("CheckBinDetected");
-    factory.registerNodeType<tennis_demo::CheckBallDetected>("CheckBallDetected");
-    factory.registerNodeType<tennis_demo::GetBallPose>("GetBallPose");
-    factory.registerNodeType<tennis_demo::GetBinPose>("GetBinPose");
-
-    // Need registerBuilder to put together custom format for node 
-    // factory.registerBuilder<PickBall>(
-    //     "PickBall",
-    //     [node](const std::string& name, const BT::NodeConfig& config)
-    //     {
-    //         return std::make_unique<PickBall>(name, config, node);
-    //     }
-    // );
-    // factory.registerBuilder<DropBall>(
-    //     "DropBall",
-    //     [node](const std::string& name, const BT::NodeConfig& config)
-    //     {
-    //         return std::make_unique<PickBall>(name, config, node);
-    //     }
-    // );
     factory.registerNodeType<DropBall>("DropBall");
     factory.registerNodeType<PickBall>("PickBall");
     // factory.registerNodeType<AngleGripper>("AngleGripper");
