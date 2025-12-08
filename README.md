@@ -15,8 +15,8 @@ This package implements the **navigation and manipulation logic** for the "Go Fe
 - **FetchBall**: Computes ball approach goal, navigates to ball, executes grasp, returns to bin and drops ball
 - **Patrol**: Cycles between waypoints while scanning for balls
 - **Spin**: Performs 360 degree rotation for environmental scanning
-- **PickBall**: 
-- **DropBall**:
+- **PickBall**: Unstows the arm, initializes motion planning to move arm towards ball, grasps ball and then returns to stowed position.
+- **DropBall**: Unstows the arm and approaches target pose over bin, then opens the gripper to drop the ball and stows arm again. 
 
 ### Custom Behavior Nodes
 
@@ -47,6 +47,7 @@ Uses the bin navigation goal to set a target pose offset in front of Spot to tur
 - `geometry_msgs`, `std_msgs`
 - `ament_index_cpp`
 - `yaml-cpp`
+- `moveit_ros_planning_interface`
 
 **System Requirements:**
 - Spot driver running
