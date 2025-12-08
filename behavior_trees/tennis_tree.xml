@@ -78,7 +78,7 @@
 
           <ComputeBinApproachGoal
               tag_pose="{bin_tag_pose}"
-              standoff="1.6"
+              standoff="1.2"
               bin_nav_pose="{bin_nav_pose}"
               bin_frame_id="bin_nav_goal"/>
 
@@ -118,7 +118,7 @@
       <ComputeBallApproachGoal
           nav_frame="spot_nav/map"
           robot_frame="base_link"
-          standoff="0.8"
+          standoff="1.2"
           ball_pose="{ball_pose}"
           ball_nav_pose="{ball_nav_pose}"/>
 

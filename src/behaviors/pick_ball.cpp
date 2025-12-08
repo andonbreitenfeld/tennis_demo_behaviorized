@@ -83,6 +83,11 @@ BT::NodeStatus PickBall::onStart()
 
     // Dereferencing shared pointer, keeps Andon's shared_ptr structure in place
     geometry_msgs::msg::PoseStamped ball_pose = *pose.value();
+    RCLCPP_INFO(node_->get_logger(), "Ball pose (in frame %s) recieved: x=%.3f y=%.3f z=%.3f",
+                ball_pose.header.frame_id,
+                ball_pose.pose.position.x,
+                ball_pose.pose.position.y,
+                ball_pose.pose.position.z);
 
     // Launch async task
     future_ = std::async(std::launch::async,
@@ -138,6 +143,10 @@ bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
     geometry_msgs::msg::Pose approach = transformed.pose;
     approach.position.x -= 0.05;
     approach.position.y += 0.03;
+
+    RCLCPP_INFO(node_->get_logger(),
+        "Planning frame: %s",
+        move_group_->getPlanningFrame().c_str());
 
     moveToPose(approach, "approach");
     rclcpp::sleep_for(std::chrono::seconds(3));
