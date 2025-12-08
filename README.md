@@ -52,3 +52,13 @@ Queries a TF transform and outputs it as a `PoseStamped` (edited version adapted
 
 This package is designed to be used as a **submodule** in a larger meta-repository:
 - **Meta-Repository**: https://github.com/andonbreitenfeld/go_fetch_ws
+
+## License
+
+MIT
+
+## Authors
+
+- Andon Breitenfeld
+- Clara Summerford
+- Luke Pronga
