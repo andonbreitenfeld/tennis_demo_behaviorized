@@ -2,8 +2,9 @@
   <BehaviorTree ID="MainTree">
     <Sequence name="RootSequence">
       <SubTree ID="StartupSequence"/>
-      <SubTree ID="DropBallSubtree" bin_nav_pose="{bin_nav_pose}"/>
+      <!-- <AngleGripper/> -->
       <SubTree ID="PickBallSubtree" ball_pose="{ball_pose}"/>
+      <SubTree ID="DropBallSubtree" bin_nav_pose="{bin_nav_pose}"/>
       <!-- <NavigateToPose
           target_pose="{bin_nav_pose}"
           robot_nav_namespace="{nav_namespace}"/> -->
@@ -72,7 +73,7 @@
 			<TriggerService service_name="/spot_manipulation_driver/close_gripper"  timeout="{service_timeout}"/>
 
 			<!-- Stow arm after dropping -->
-			<TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
+			<!-- <TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/> -->
 		
 		</Sequence>
 	</BehaviorTree>

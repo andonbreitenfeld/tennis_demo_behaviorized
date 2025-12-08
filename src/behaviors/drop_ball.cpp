@@ -83,6 +83,11 @@ BT::NodeStatus DropBall::onStart()
     }
 
     geometry_msgs::msg::PoseStamped bin_nav_pose = *pose.value();
+    RCLCPP_INFO(node_->get_logger(), "Bin pose (in frame %s) recieved: x=%.3f y=%.3f z=%.3f",
+                bin_nav_pose.header.frame_id,
+                bin_nav_pose.pose.position.x,
+                bin_nav_pose.pose.position.y,
+                bin_nav_pose.pose.position.z);
 
     // Launch async task
     future_ = std::async(std::launch::async,

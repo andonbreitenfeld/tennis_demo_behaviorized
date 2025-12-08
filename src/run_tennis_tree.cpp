@@ -13,6 +13,7 @@
 #include "tennis_demo_behaviorized/behaviors/get_bin_pose.hpp"
 #include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
 #include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
+#include "tennis_demo_behaviorized/behaviors/angle_gripper.hpp"
 
 // Utility behaviors
 #include <nrg_utility_behaviors/get_current_pose.hpp>
@@ -60,7 +61,7 @@ int main(int argc, char **argv)
     // );
     factory.registerNodeType<DropBall>("DropBall");
     factory.registerNodeType<PickBall>("PickBall");
-
+    // factory.registerNodeType<AngleGripper>("AngleGripper");
 
     // Register utility nodes
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
@@ -105,9 +106,9 @@ int main(int argc, char **argv)
 
     auto ball_pose = std::make_shared<geometry_msgs::msg::PoseStamped>();
     ball_pose->header.frame_id = "spot_nav/map";
-    ball_pose->pose.position.x = 2.0;  // Replace with actual coordinates (2.0)
-    ball_pose->pose.position.y = 0.0;  // Replace with actual coordinates (-4.0)
-    ball_pose->pose.position.z = 0.8;
+    ball_pose->pose.position.x = 2.296;  // Replace with actual coordinates (2.0)
+    ball_pose->pose.position.y = 0.076;  // Replace with actual coordinates (-4.0)
+    ball_pose->pose.position.z = 0.68;
     // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
     // ball_pose->pose.orientation.x = 0.0;
     // ball_pose->pose.orientation.y = 0.0;

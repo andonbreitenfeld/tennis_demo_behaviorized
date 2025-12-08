@@ -1,27 +1,28 @@
-#include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
+#include "tennis_demo_behaviorized/behaviors/angle_gripper.hpp"
 #include <future>
 
-PickBall::PickBall(
+AngleGripper::AngleGripper(
     const std::string& name, 
     const BT::NodeConfig& config)
 
     : BT::StatefulActionNode(name, config)
+
 {
     try {
-    node_ = rclcpp::Node::make_shared("pick_ball");
-    
+    node_ = rclcpp::Node::make_shared("angle_gripper");
+
     // Get robot_description from move_group's namespace
     auto param_client = std::make_shared<rclcpp::SyncParametersClient>(
         node_, "/spot_moveit/move_group");
     
-    // // Wait for the parameter service to be available
+    // Wait for the parameter service to be available
     if (!param_client->wait_for_service(std::chrono::seconds(10))) {
         RCLCPP_ERROR(node_->get_logger(), 
             "Parameter service /spot_moveit/move_group not available");
         throw std::runtime_error("move_group parameter service not available");
     }
     
-    // // Get the robot_description parameter
+    // Get the robot_description parameter
     auto params = param_client->get_parameters({
         "robot_description",
         "robot_description_semantic",
@@ -31,11 +32,11 @@ PickBall::PickBall(
             "Could not get required parameters from /spot_moveit/move_group");
         throw std::runtime_error("Required parameters not found");
         }
-
+    
     std::string robot_description = params[0].as_string();
     std::string robot_description_semantic = params[1].as_string();
 
-    // // Declare parameters on this node
+    // Declare parameters on this node
     node_->declare_parameter("robot_description", robot_description);
     node_->declare_parameter("robot_description_semantic", robot_description_semantic);
 
@@ -52,53 +53,56 @@ PickBall::PickBall(
     // TF setup
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
     }
     
     catch (const std::exception& e) {
-        std::cerr << "PickBall constructor EXCEPTION: " << e.what() << std::endl;
+        std::cerr << "AngleGripper constructor EXCEPTION: " << e.what() << std::endl;
         throw;  // rethrow so BT can fail clearly
     }
+    
 }
 
-BT::PortsList PickBall::providedPorts()
-    {
-        return {
-            BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose")
-        };
-    }
+// BT::PortsList AngleGripper::providedPorts()
+//     {
+//         return {
+//             BT::InputPort<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("search_pose") 
+//         };
+//     }
 
 
 // --- sequential running code ---
-BT::NodeStatus PickBall::onStart()
+BT::NodeStatus AngleGripper::onStart()
 {
-    auto pose = getInput<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("ball_pose");
-    if (!pose)
-    {
-        RCLCPP_ERROR(node_->get_logger(),
-                     "PickBall: missing input port [ball_pose]: %s",
-                     pose.error().c_str());
-        return BT::NodeStatus::FAILURE;
-    }
+    // auto pose = getInput<std::shared_ptr<geometry_msgs::msg::PoseStamped>>("search_pose");
+    // if (!pose)
+    // {
+    //     RCLCPP_ERROR(node_->get_logger(),
+    //                  "AngleGripper: missing input port [search_pose]: %s",
+    //                  pose.error().c_str());
+    //     return BT::NodeStatus::FAILURE;
+    // }
 
-    // Dereferencing shared pointer, keeps Andon's shared_ptr structure in place
-    geometry_msgs::msg::PoseStamped ball_pose = *pose.value();
-    RCLCPP_INFO(node_->get_logger(), "Ball pose (in frame %s) recieved: x=%.3f y=%.3f z=%.3f",
-                ball_pose.header.frame_id,
-                ball_pose.pose.position.x,
-                ball_pose.pose.position.y,
-                ball_pose.pose.position.z);
+    geometry_msgs::msg::PoseStamped search_pose;
+    search_pose.header.frame_id = "arm0_base_link";
+    search_pose.pose.position.x = 0.5;  // Replace with actual coordinates (2.0)
+    search_pose.pose.position.y = 0.0;  // Replace with actual coordinates (-4.0)
+    search_pose.pose.position.z = 0.3;
+    // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
+    search_pose.pose.orientation.x = 0.0;
+    search_pose.pose.orientation.y = -0.1;
+    search_pose.pose.orientation.z = 0.0;
+    search_pose.pose.orientation.w = 0.0;
 
     // Launch async task
     future_ = std::async(std::launch::async,
-                         [this, ball_pose]() {
-                             return executePickAndPlace(ball_pose);
+                         [this, search_pose]() {
+                             return executePickAndPlace(search_pose);
                          });
 
     return BT::NodeStatus::RUNNING;
 }
 
-BT::NodeStatus PickBall::onRunning()
+BT::NodeStatus AngleGripper::onRunning()
 {
     using namespace std::chrono_literals;
 
@@ -111,18 +115,18 @@ BT::NodeStatus PickBall::onRunning()
     return BT::NodeStatus::RUNNING;
 }
 
-void PickBall::onHalted()
+void AngleGripper::onHalted()
 {
-    RCLCPP_WARN(node_->get_logger(), "PickBall halted");
+    RCLCPP_WARN(node_->get_logger(), "AngleGripper halted");
 }
 
-// --- move to approach and target pose logic ---
-bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
+// --- transform bin pose and move move to drop pose ---
+bool AngleGripper::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
 {
-    RCLCPP_INFO(node_->get_logger(), "PickBall: executing motion...");
+    RCLCPP_INFO(node_->get_logger(), "AngleGripper: executing motion...");
 
+    // transform input pose (bin pose) to spot body frame first
     geometry_msgs::msg::PoseStamped transformed;
-
     try {
         auto tf = tf_buffer_->lookupTransform(
             "body",
@@ -137,28 +141,21 @@ bool PickBall::executePickAndPlace(const geometry_msgs::msg::PoseStamped& msg)
         return false;
     }
 
-    transformed.pose = rotatePoseRoll90(transformed.pose);
+    // transformed.pose = rotatePoseRoll90(transformed.pose);
 
     // Approach pose
-    geometry_msgs::msg::Pose approach = transformed.pose;
-    approach.position.x -= 0.05;
-    approach.position.y += 0.03;
+    geometry_msgs::msg::Pose search_pose = transformed.pose;
+    // drop_pose.position.x += 0.6; // values found through trial and error, Spot consistently navigates to left side of tag
+    // drop_pose.position.y -= 0.2;
 
-    moveToPose(approach, "approach");
+    moveToPose(search_pose, "search");
     rclcpp::sleep_for(std::chrono::seconds(3));
-
-    // Grasp pose with offsets
-    geometry_msgs::msg::Pose grasp = transformed.pose;
-    grasp.position.x += 0.03;
-    grasp.position.y += 0.03;
-
-    moveToPose(grasp, "grasp");
 
     return true;
 }
 
 // --- helper functions ---
-geometry_msgs::msg::Pose PickBall::rotatePoseRoll90(const geometry_msgs::msg::Pose &pose_body)
+geometry_msgs::msg::Pose AngleGripper::rotatePoseRoll90(const geometry_msgs::msg::Pose &pose_body)
     {
         tf2::Quaternion q_orig;
         tf2::fromMsg(pose_body.orientation, q_orig);
@@ -175,7 +172,7 @@ geometry_msgs::msg::Pose PickBall::rotatePoseRoll90(const geometry_msgs::msg::Po
         return out;
     }
 
-void PickBall::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std::string &pose_name)
+void AngleGripper::moveToPose(const geometry_msgs::msg::Pose &target_pose, const std::string &pose_name)
 {
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     move_group_->setPoseTarget(target_pose);
