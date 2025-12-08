@@ -1,25 +1,27 @@
 #include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
 #include <future>
 
-PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
+PickBall::PickBall(
+    const std::string& name, 
+    const BT::NodeConfig& config)
+
     : BT::StatefulActionNode(name, config)
 {
     try {
-
     node_ = rclcpp::Node::make_shared("pick_ball");
     
     // Get robot_description from move_group's namespace
     auto param_client = std::make_shared<rclcpp::SyncParametersClient>(
         node_, "/spot_moveit/move_group");
     
-    // Wait for the parameter service to be available
+    // // Wait for the parameter service to be available
     if (!param_client->wait_for_service(std::chrono::seconds(10))) {
         RCLCPP_ERROR(node_->get_logger(), 
             "Parameter service /spot_moveit/move_group not available");
         throw std::runtime_error("move_group parameter service not available");
     }
     
-    // Get the robot_description parameter
+    // // Get the robot_description parameter
     auto params = param_client->get_parameters({
         "robot_description",
         "robot_description_semantic",
@@ -29,23 +31,11 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
             "Could not get required parameters from /spot_moveit/move_group");
         throw std::runtime_error("Required parameters not found");
         }
-    
-    // Check robot_description
-    if (params[0].get_type() == rclcpp::PARAMETER_NOT_SET) {
-        RCLCPP_ERROR(node_->get_logger(), "robot_description not found");
-        throw std::runtime_error("robot_description not found");
-    }
-    
-    // Check robot_description_semantic
-    if (params[1].get_type() == rclcpp::PARAMETER_NOT_SET) {
-        RCLCPP_ERROR(node_->get_logger(), "robot_description_semantic not found");
-        throw std::runtime_error("robot_description_semantic not found");
-    }
 
     std::string robot_description = params[0].as_string();
     std::string robot_description_semantic = params[1].as_string();
 
-    // Declare parameters on this node
+    // // Declare parameters on this node
     node_->declare_parameter("robot_description", robot_description);
     node_->declare_parameter("robot_description_semantic", robot_description_semantic);
 
@@ -63,9 +53,6 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-    // Spin ROS in background
-    executor_.add_node(node_);
-    spin_thread_ = std::thread([this]() { executor_.spin(); });
     }
     
     catch (const std::exception& e) {
@@ -74,17 +61,6 @@ PickBall::PickBall(const std::string& name, const BT::NodeConfig& config)
     }
 }
 
-PickBall::~PickBall()
-{
-    // rclcpp::shutdown(); // chat says this could shut down ros on all nodes, should only be called once in main BT executable
-    executor_.cancel();
-    if (spin_thread_.joinable())
-    {
-        spin_thread_.join();
-    }
-}
-
-//prev had 'static' before declaring BT::Ports...
 BT::PortsList PickBall::providedPorts()
     {
         return {

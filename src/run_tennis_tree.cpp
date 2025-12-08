@@ -30,6 +30,9 @@ int main(int argc, char **argv)
     rclcpp::init(argc, argv);
     rclcpp::NodeOptions node_options;
 
+    // Create the shared node for ALL BT actions
+    auto node = rclcpp::Node::make_shared("tennis_bt");
+
     BT::BehaviorTreeFactory factory;
     auto tf_buffer = std::make_shared<tf2_ros::Buffer>(std::make_shared<rclcpp::Clock>());
     auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
@@ -39,8 +42,25 @@ int main(int argc, char **argv)
     factory.registerNodeType<tennis_demo::CheckBallDetected>("CheckBallDetected");
     factory.registerNodeType<tennis_demo::GetBallPose>("GetBallPose");
     factory.registerNodeType<tennis_demo::GetBinPose>("GetBinPose");
-    factory.registerNodeType<PickBall>("PickBall");
+
+    // Need registerBuilder to put together custom format for node 
+    // factory.registerBuilder<PickBall>(
+    //     "PickBall",
+    //     [node](const std::string& name, const BT::NodeConfig& config)
+    //     {
+    //         return std::make_unique<PickBall>(name, config, node);
+    //     }
+    // );
+    // factory.registerBuilder<DropBall>(
+    //     "DropBall",
+    //     [node](const std::string& name, const BT::NodeConfig& config)
+    //     {
+    //         return std::make_unique<PickBall>(name, config, node);
+    //     }
+    // );
     factory.registerNodeType<DropBall>("DropBall");
+    factory.registerNodeType<PickBall>("PickBall");
+
 
     // Register utility nodes
     factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
@@ -75,7 +95,7 @@ int main(int argc, char **argv)
     bin_nav_pose->header.frame_id = "spot_nav/map";
     bin_nav_pose->pose.position.x = 2.0;  // Replace with actual coordinates (2.0)
     bin_nav_pose->pose.position.y = 0.0;  // Replace with actual coordinates (-4.0)
-    bin_nav_pose->pose.position.z = 1.2;
+    bin_nav_pose->pose.position.z = 1.0;
     // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
     // bin_nav_pose->pose.orientation.x = 0.0;
     // bin_nav_pose->pose.orientation.y = 0.0;
@@ -87,7 +107,7 @@ int main(int argc, char **argv)
     ball_pose->header.frame_id = "spot_nav/map";
     ball_pose->pose.position.x = 2.0;  // Replace with actual coordinates (2.0)
     ball_pose->pose.position.y = 0.0;  // Replace with actual coordinates (-4.0)
-    ball_pose->pose.position.z = 1.2;
+    ball_pose->pose.position.z = 0.8;
     // Quaternion: w=1, x=0, y=0, z=0 = Roll=0°, Pitch=0°, Yaw=0° (no rotation)
     // ball_pose->pose.orientation.x = 0.0;
     // ball_pose->pose.orientation.y = 0.0;

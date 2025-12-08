@@ -19,9 +19,9 @@
 class DropBall : public BT::StatefulActionNode
 {
 public:
-    DropBall(const std::string& name, const BT::NodeConfig& config);
-
-    ~DropBall() override;
+    DropBall(
+        const std::string& name, 
+        const BT::NodeConfig& config);
 
     static BT::PortsList providedPorts();
 
@@ -38,8 +38,6 @@ private:
 
     // ROS
     rclcpp::Node::SharedPtr node_;
-    rclcpp::executors::MultiThreadedExecutor executor_;
-    std::thread spin_thread_;
     std::future<bool> future_;
 
 

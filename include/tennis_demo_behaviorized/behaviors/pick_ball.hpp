@@ -19,9 +19,9 @@
 class PickBall : public BT::StatefulActionNode
 {
 public:
-    PickBall(const std::string& name, const BT::NodeConfig& config);
-
-    ~PickBall() override;
+    PickBall(
+        const std::string& name, 
+        const BT::NodeConfig& config);
 
     static BT::PortsList providedPorts();
 
@@ -38,8 +38,6 @@ private:
 
     // ROS
     rclcpp::Node::SharedPtr node_;
-    rclcpp::executors::MultiThreadedExecutor executor_;
-    std::thread spin_thread_;
     std::future<bool> future_;
 
 
