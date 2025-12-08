@@ -3,15 +3,17 @@
 <package format="3">
   <name>tennis_demo_behaviorized</name>
   <version>0.0.1</version>
-  <description>Behavior tree demo for Spot robot bin and ball detection</description>
-  <maintainer email="lpronga@utexas.edu">luke</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Behavior Tree logic for Go Fetch Demo, contains all navigation and manipulation logic.</description>
+  <maintainer email="andonbreitenfeld@utexas.edu">Andon Breitenfeld</maintainer>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>behaviortree_cpp</depend>
+  <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
   <depend>spot_behaviors</depend>
