@@ -11,11 +11,10 @@ This package implements the **navigation and manipulation logic** for the "Go Fe
 ## Architecture
 
 ### Behavior Tree Structure
-- **MainTree**: Orchestrates startup, ball detection monitoring, and fetch/patrol modes
 - **StartupSequence**: Initializes robot (claim, power on, undock) and locates bin
 - **FetchBall**: Computes ball approach goal, navigates to ball, executes grasp, returns to bin and drops ball
 - **Patrol**: Cycles between waypoints while scanning for balls
-- **Spin**: Performs 360° rotation for environmental scanning
+- **Spin**: Performs 360 degree rotation for environmental scanning
 
 ### Custom Behavior Nodes
 
