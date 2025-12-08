@@ -10,6 +10,8 @@
 #include "tennis_demo_behaviorized/behaviors/compute_ball_approach_goal.hpp"
 #include "tennis_demo_behaviorized/behaviors/lookup_tf.hpp"
 #include "tennis_demo_behaviorized/behaviors/rotate_pose_yaw.hpp"
+#include "tennis_demo_behaviorized/behaviors/pick_ball.hpp"
+#include "tennis_demo_behaviorized/behaviors/drop_ball.hpp"
 
 #include <nrg_utility_behaviors/trigger_service.hpp>
 #include <nrg_utility_behaviors/get_message_from_topic.hpp>
@@ -40,6 +42,9 @@ void registerBehaviors(BT::BehaviorTreeFactory& factory,
       return std::make_unique<tennis_demo_behaviorized::ComputeBallApproachGoal>(
         name, config, node, tf_buffer);
     });
+
+  factory.registerNodeType<DropBall>("DropBall");
+  factory.registerNodeType<PickBall>("PickBall");
 
   factory.registerNodeType<nrg_utility_behaviors::TriggerService>("TriggerService");
   factory.registerNodeType<nrg_utility_behaviors::GetMessageFromTopic>("GetMessageFromTopic");

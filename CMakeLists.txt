@@ -22,6 +22,7 @@ find_package(nrg_utility_behaviors REQUIRED)
 find_package(nrg_navigation_behaviors REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
 
 include_directories(include)
 
@@ -31,6 +32,8 @@ add_executable(run_tennis_tree
   src/behaviors/lookup_tf.cpp
   src/behaviors/compute_ball_approach_goal.cpp
   src/behaviors/rotate_pose_yaw.cpp
+  src/behaviors/pick_ball.cpp
+  src/behaviors/drop_ball.cpp
 )
 
 ament_target_dependencies(run_tennis_tree
@@ -45,6 +48,8 @@ ament_target_dependencies(run_tennis_tree
   nrg_utility_behaviors
   nrg_navigation_behaviors
   ament_index_cpp
+  moveit_ros_planning_interface
+
 )
 
 target_link_libraries(run_tennis_tree

@@ -112,13 +112,13 @@
 
 
   <!-- Fetch Ball -->
-  <BehaviorTree ID="FetchBall" bin_nav_pose="{bin_nav_pose}">
+  <BehaviorTree ID="FetchBall" ball_pose="{ball_pose}" bin_nav_pose="{bin_nav_pose}">
     <Sequence name="FetchBallSequence">
 
       <ComputeBallApproachGoal
           nav_frame="spot_nav/map"
           robot_frame="base_link"
-          standoff="1.5"
+          standoff="0.8"
           ball_pose="{ball_pose}"
           ball_nav_pose="{ball_nav_pose}"/>
 
@@ -128,21 +128,69 @@
                trans_err_threshold="0.05"
                rot_err_threshold="0.05"/>
 
-      <!-- PLACEHOLDER: Insert grasp here -->
-      <Delay delay_msec="1000">
-        <AlwaysSuccess/>
-      </Delay>
+      <!-- Pick up ball -->
+      <SubTree ID="PickBallSubtree" ball_pose="{ball_pose}"/>
 
-      <!-- Nav2 to bin -->
+      <!-- Navigate to bin -->
       <SubTree ID="WalkToGoal"
                goal_pose="{bin_nav_pose}"
                trans_err_threshold="0.05"
                rot_err_threshold="0.05"/>
 
-      <!-- PLACEHOLDER: Insert drop here -->
-      <Delay delay_msec="5000">
-        <AlwaysSuccess/>
-      </Delay>
+      <!-- Drop ball in bin -->
+      <SubTree ID="DropBallSubtree" bin_nav_pose="{bin_nav_pose}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
+
+
+  <!-- Subtree to pick up ball -->
+  <BehaviorTree ID="PickBallSubtree" ball_pose="{ball_pose}">
+    <Sequence>
+      <!-- Port variables -->
+      <Script code="service_timeout:=15"/>
+
+      <!-- Mini unstow -->
+      <TriggerService service_name="/spot_manipulation_driver/mini_unstow_arm" timeout="{service_timeout}"/>
+
+      <!-- Ensure gripper is open -->
+      <TriggerService service_name="/spot_manipulation_driver/open_gripper" timeout="{service_timeout}"/>
+
+      <!-- Custom MoveIt node (move to ball and rotate arm) -->
+      <PickBall ball_pose="{ball_pose}"/>
+
+      <!-- Close the gripper, grabbing ball -->
+      <TriggerService service_name="/spot_manipulation_driver/close_gripper" timeout="{service_timeout}"/>
+
+      <!-- Stow arm after grabbing ball -->
+      <TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
+
+
+  <!-- Subtree to drop ball in bin -->
+  <BehaviorTree ID="DropBallSubtree" bin_nav_pose="{bin_nav_pose}">
+    <Sequence>
+      <!-- Port variables -->
+      <Script code="service_timeout:=15"/>
+
+      <!-- Mini unstow -->
+      <TriggerService service_name="/spot_manipulation_driver/mini_unstow_arm" timeout="{service_timeout}"/>
+
+      <!-- Custom MoveIt node (move to bin and position arm) -->
+      <DropBall bin_nav_pose="{bin_nav_pose}"/>
+
+      <!-- Open gripper to drop ball -->
+      <TriggerService service_name="/spot_manipulation_driver/open_gripper" timeout="{service_timeout}"/>
+
+      <!-- Close the gripper after dropping -->
+      <TriggerService service_name="/spot_manipulation_driver/close_gripper" timeout="{service_timeout}"/>
+
+      <!-- Stow arm after dropping -->
+      <TriggerService service_name="/spot_manipulation_driver/stow_arm" timeout="{service_timeout}"/>
 
     </Sequence>
   </BehaviorTree>
